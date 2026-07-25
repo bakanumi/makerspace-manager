@@ -32,7 +32,15 @@ export async function createCustomer(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  await prisma.customer.create({ data: { ...parsed.data, organizationId } });
+  await prisma.$transaction(async (tx) => {
+    const org = await tx.organization.update({
+      where: { id: organizationId },
+      data: { customerNumberCounter: { increment: 1 } },
+    });
+    await tx.customer.create({
+      data: { ...parsed.data, organizationId, customerNumber: org.customerNumberCounter },
+    });
+  });
   revalidatePath("/kunden");
   return { success: true };
 }

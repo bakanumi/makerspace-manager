@@ -34,7 +34,7 @@ export default async function DashboardPage() {
   const stats = [
     { label: "Material-Sorten", value: materialCount, icon: Boxes, href: "/inventar/material" },
     { label: "Geräte", value: deviceCount, icon: Printer, href: "/inventar/geraete" },
-    { label: "Fertigprodukte", value: productCount, icon: Package, href: "/produkte" },
+    { label: "Produkte", value: productCount, icon: Package, href: "/produkte" },
     { label: "Offene Bestellungen", value: openOrders, icon: ClipboardList, href: "/bestellungen" },
   ];
 

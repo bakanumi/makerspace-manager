@@ -7,6 +7,9 @@ import {
   Users,
   ClipboardList,
   FileText,
+  FileSignature,
+  Truck,
+  Ticket,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -25,6 +28,9 @@ export const navItems: NavItem[] = [
   { href: "/produkte", label: "Produkte", icon: Package },
   { href: "/kunden", label: "Kunden", icon: Users },
   { href: "/bestellungen", label: "Bestellungen", icon: ClipboardList },
+  { href: "/versand", label: "Versand", icon: Truck },
   { href: "/rechnungen", label: "Rechnungen", icon: FileText },
+  { href: "/angebote", label: "Angebote", icon: FileSignature },
+  { href: "/gutscheine", label: "Gutscheine", icon: Ticket },
   { href: "/einstellungen", label: "Einstellungen", icon: Settings },
 ];

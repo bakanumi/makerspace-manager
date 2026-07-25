@@ -1,17 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { prisma } from "@/lib/prisma";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Werkstatt Manager",
@@ -23,16 +13,37 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const org = await prisma.organization.findFirst({
+    select: { themeColor: true, themeMode: true },
+  });
+  const themeColor = org?.themeColor ?? "blue";
+  const themeMode = org?.themeMode ?? "SYSTEM";
+  const forcedClass = themeMode === "DARK" ? "dark" : themeMode === "LIGHT" ? "light" : "";
+
   return (
     <html
       lang="de"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      data-theme={themeColor}
+      className={`h-full antialiased ${forcedClass}`}
     >
+      <head>
+        {themeMode === "SYSTEM" && (
+          <script
+            // Verhindert Flackern: setzt .dark vor dem ersten Paint, falls das OS Dunkelmodus meldet.
+            dangerouslySetInnerHTML={{
+              __html:
+                "try{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}}catch(e){}",
+            }}
+          />
+        )}
+      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
         <Toaster />

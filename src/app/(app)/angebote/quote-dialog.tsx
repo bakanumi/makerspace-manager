@@ -6,7 +6,6 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
 import {
   Dialog,
@@ -16,12 +15,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
-import { createOrder } from "./actions";
+import { createQuote } from "./actions";
 
 export type CustomerOption = { id: string; name: string };
-export type ProductOption = { id: string; name: string; salePrice: number; stock: number };
+export type ProductOption = { id: string; name: string; salePrice: number };
 export type CalculationOption = { id: string; label: string; sellingPrice: number };
-export type ShippingOption = { id: string; name: string; cost: number };
 
 type ItemRow = {
   kind: "product" | "calculation";
@@ -31,38 +29,30 @@ type ItemRow = {
   unitPrice: number;
 };
 
-export function OrderDialog({
+export function QuoteDialog({
   customers,
   products,
   calculations,
-  shippingOptions,
 }: {
   customers: CustomerOption[];
   products: ProductOption[];
   calculations: CalculationOption[];
-  shippingOptions: ShippingOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [customerId, setCustomerId] = useState("");
-  const [note, setNote] = useState("");
   const [items, setItems] = useState<ItemRow[]>([]);
-  const [shippingOptionId, setShippingOptionId] = useState("");
-  const [couponCode, setCouponCode] = useState("");
-  const [voucherCode, setVoucherCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [validUntil, setValidUntil] = useState("");
   const [isPending, startTransition] = useTransition();
-
-  const canAddItem = products.length > 0 || calculations.length > 0;
 
   const subtotal = useMemo(
     () => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
     [items]
   );
-  const shippingCost = shippingOptions.find((s) => s.id === shippingOptionId)?.cost ?? 0;
 
   const addItem = (kind: ItemRow["kind"]) => {
     if (kind === "product") {
-      const firstUnused = products.find((p) => !items.some((i) => i.productId === p.id));
-      const p = firstUnused ?? products[0];
+      const p = products.find((pr) => !items.some((i) => i.productId === pr.id)) ?? products[0];
       if (!p) return;
       setItems([...items, { kind: "product", productId: p.id, calculationId: "", quantity: 1, unitPrice: p.salePrice }]);
     } else {
@@ -94,11 +84,9 @@ export function OrderDialog({
 
   const reset = () => {
     setCustomerId("");
-    setNote("");
     setItems([]);
-    setShippingOptionId("");
-    setCouponCode("");
-    setVoucherCode("");
+    setDiscountAmount(0);
+    setValidUntil("");
   };
 
   const handleSubmit = () => {
@@ -111,25 +99,23 @@ export function OrderDialog({
       return;
     }
     startTransition(async () => {
-      const res = await createOrder({
+      const res = await createQuote({
         customerId,
-        note,
         items: items.map((i) => ({
           productId: i.kind === "product" ? i.productId : undefined,
           calculationId: i.kind === "calculation" ? i.calculationId : undefined,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
         })),
-        shippingOptionId: shippingOptionId || undefined,
-        couponCode: couponCode || undefined,
-        voucherCode: voucherCode || undefined,
+        discountAmount,
+        validUntil: validUntil || undefined,
       });
       if (res.success) {
-        toast.success("Bestellung angelegt");
+        toast.success("Angebot erstellt");
         reset();
         setOpen(false);
       } else {
-        toast.error(res.error ?? "Fehler beim Anlegen");
+        toast.error(res.error ?? "Fehler beim Erstellen");
       }
     });
   };
@@ -138,20 +124,16 @@ export function OrderDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button className="gap-1.5" />}>
         <Plus className="h-4 w-4" />
-        Neue Bestellung
+        Neues Angebot
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neue Bestellung</DialogTitle>
+          <DialogTitle>Neues Angebot</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="o-customer">Kunde</Label>
-            <NativeSelect
-              id="o-customer"
-              value={customerId}
-              onChange={(e) => setCustomerId(e.target.value)}
-            >
+            <Label htmlFor="q-customer">Kunde</Label>
+            <NativeSelect id="q-customer" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
               <option value="" disabled>
                 Kunde wählen
               </option>
@@ -167,55 +149,28 @@ export function OrderDialog({
             <div className="flex items-center justify-between">
               <Label>Positionen</Label>
               <div className="flex gap-1.5">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                  onClick={() => addItem("product")}
-                  disabled={products.length === 0}
-                >
+                <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => addItem("product")} disabled={products.length === 0}>
                   <Plus className="h-3.5 w-3.5" />
                   Produkt
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                  onClick={() => addItem("calculation")}
-                  disabled={calculations.length === 0}
-                >
+                <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => addItem("calculation")} disabled={calculations.length === 0}>
                   <Plus className="h-3.5 w-3.5" />
                   Kalkulation
                 </Button>
               </div>
             </div>
-            {!canAddItem && (
-              <p className="text-muted-foreground text-xs">
-                Lege zuerst ein Produkt oder eine Kalkulation an.
-              </p>
-            )}
             {items.map((item, i) => (
               <div key={i} className="flex items-center gap-2">
                 {item.kind === "product" ? (
-                  <NativeSelect
-                    className="flex-1"
-                    value={item.productId}
-                    onChange={(e) => updateItem(i, { productId: e.target.value })}
-                  >
+                  <NativeSelect className="flex-1" value={item.productId} onChange={(e) => updateItem(i, { productId: e.target.value })}>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.name} ({p.stock} auf Lager)
+                        {p.name}
                       </option>
                     ))}
                   </NativeSelect>
                 ) : (
-                  <NativeSelect
-                    className="flex-1"
-                    value={item.calculationId}
-                    onChange={(e) => updateItem(i, { calculationId: e.target.value })}
-                  >
+                  <NativeSelect className="flex-1" value={item.calculationId} onChange={(e) => updateItem(i, { calculationId: e.target.value })}>
                     {calculations.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.label}
@@ -247,64 +202,31 @@ export function OrderDialog({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="o-shipping">Versandart</Label>
-              <NativeSelect
-                id="o-shipping"
-                value={shippingOptionId}
-                onChange={(e) => setShippingOptionId(e.target.value)}
-              >
-                <option value="">Kein Versand</option>
-                {shippingOptions.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({formatCurrency(s.cost)})
-                  </option>
-                ))}
-              </NativeSelect>
+              <Label htmlFor="q-discount">Rabatt (€, optional)</Label>
+              <Input
+                id="q-discount"
+                type="number"
+                step="0.01"
+                value={discountAmount}
+                onChange={(e) => setDiscountAmount(Number(e.target.value) || 0)}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="o-coupon">Rabattcode (optional)</Label>
-              <Input
-                id="o-coupon"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="z.B. FREUNDE10"
-              />
-            </div>
-            <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="o-voucher">Gutschein-Code einlösen (optional)</Label>
-              <Input
-                id="o-voucher"
-                value={voucherCode}
-                onChange={(e) => setVoucherCode(e.target.value)}
-                placeholder="z.B. GUT-AB12CD"
-              />
+              <Label htmlFor="q-validUntil">Gültig bis (optional)</Label>
+              <Input id="q-validUntil" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="o-note">Notiz (optional)</Label>
-            <Textarea id="o-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
-          </div>
-
-          <div className="space-y-1 border-t pt-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Zwischensumme</span>
-              <span>{formatCurrency(subtotal)}</span>
-            </div>
-            {shippingCost > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Versand</span>
-                <span>{formatCurrency(shippingCost)}</span>
-              </div>
-            )}
-            <p className="text-muted-foreground text-xs">
-              Rabatt/Gutschein werden beim Speichern serverseitig geprüft und in der Gesamtsumme berücksichtigt.
-            </p>
+          <div className="flex items-center justify-between border-t pt-3">
+            <span className="text-muted-foreground text-sm">Gesamt</span>
+            <span className="text-lg font-semibold">
+              {formatCurrency(Math.max(0, subtotal - discountAmount))}
+            </span>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button onClick={handleSubmit} disabled={isPending}>
-              {isPending ? "Speichern…" : "Bestellung anlegen"}
+              {isPending ? "Speichern…" : "Angebot erstellen"}
             </Button>
           </div>
         </div>

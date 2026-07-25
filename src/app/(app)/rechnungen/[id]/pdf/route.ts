@@ -20,7 +20,7 @@ export async function GET(
       order: {
         include: {
           customer: true,
-          items: { include: { product: true } },
+          items: { include: { product: true, calculation: true } },
         },
       },
     },
@@ -30,16 +30,26 @@ export async function GET(
     return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
   }
 
+  const itemsSubtotal = invoice.order.items.reduce(
+    (sum, item) => sum + Number(item.unitPrice) * item.quantity,
+    0
+  );
+
   const buffer = await renderToBuffer(
     InvoicePdf({
-      invoiceNumber: invoice.number,
+      kind: "Rechnung",
+      documentNumber: invoice.number,
       issuedAt: new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
         invoice.issuedAt
       ),
       taxMode: invoice.taxMode,
       vatRatePercent: Number(invoice.vatRatePercent),
+      itemsSubtotal,
+      discountAmount: Number(invoice.discountAmount),
+      shippingCost: Number(invoice.shippingCost),
       totalNet: Number(invoice.totalNet),
       totalGross: Number(invoice.totalGross),
+      pdfTemplate: invoice.organization.pdfTemplate,
       organization: {
         name: invoice.organization.name,
         addressLine1: invoice.organization.addressLine1,
@@ -47,7 +57,12 @@ export async function GET(
         city: invoice.organization.city,
         country: invoice.organization.country,
         email: invoice.organization.email,
+        phone: invoice.organization.phone,
         taxId: invoice.organization.taxId,
+        logoUrl: invoice.organization.logoUrl,
+        footerText: invoice.organization.invoiceFooterText,
+        showPhone: invoice.organization.invoiceShowPhone,
+        showEmail: invoice.organization.invoiceShowEmail,
       },
       customer: {
         name: invoice.order.customer.name,
@@ -55,9 +70,10 @@ export async function GET(
         postalCode: invoice.order.customer.postalCode,
         city: invoice.order.customer.city,
         country: invoice.order.customer.country,
+        customerNumber: invoice.order.customer.customerNumber,
       },
       items: invoice.order.items.map((item) => ({
-        name: item.product.name,
+        name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
       })),

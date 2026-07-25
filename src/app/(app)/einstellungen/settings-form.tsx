@@ -5,7 +5,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ImageUpload } from "@/components/image-upload";
 import {
   Select,
   SelectContent,
@@ -32,6 +34,29 @@ type OrgFormValues = {
   defaultMarginPercent: number;
   invoiceNumberPrefix: string;
   invoiceCounter: number;
+  offerNumberPrefix: string;
+  offerCounter: number;
+  themeColor: string;
+  themeMode: "LIGHT" | "DARK" | "SYSTEM";
+  pdfTemplate: "STANDARD" | "MODERN";
+  logoUrl: string;
+  invoiceShowPhone: boolean;
+  invoiceShowEmail: boolean;
+  invoiceFooterText: string;
+};
+
+const themeColorLabel: Record<string, string> = {
+  blue: "Blau",
+  green: "Grün",
+  violet: "Violett",
+  amber: "Amber",
+  neutral: "Neutral (Schwarz/Grau)",
+};
+
+const themeModeLabel: Record<string, string> = {
+  LIGHT: "Hell",
+  DARK: "Dunkel",
+  SYSTEM: "Systemeinstellung folgen",
 };
 
 const initialState: SettingsState = {};
@@ -91,7 +116,83 @@ export function SettingsForm({ org }: { org: OrgFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Steuer & Rechnungen</CardTitle>
+          <CardTitle>Design</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="themeColor">Akzentfarbe</Label>
+            <Select name="themeColor" defaultValue={org.themeColor}>
+              <SelectTrigger id="themeColor" className="w-full">
+                <SelectValue>{(value: string) => themeColorLabel[value] ?? value}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(themeColorLabel).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="themeMode">Darstellung</Label>
+            <Select name="themeMode" defaultValue={org.themeMode}>
+              <SelectTrigger id="themeMode" className="w-full">
+                <SelectValue>{(value: string) => themeModeLabel[value] ?? value}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(themeModeLabel).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="pdfTemplate">PDF-Vorlage (Rechnungen & Angebote)</Label>
+            <Select name="pdfTemplate" defaultValue={org.pdfTemplate}>
+              <SelectTrigger id="pdfTemplate" className="w-full">
+                <SelectValue>
+                  {(value: string) => (value === "MODERN" ? "Modern (mit Akzentfarbe)" : "Standard")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="STANDARD">Standard</SelectItem>
+                <SelectItem value="MODERN">Modern (mit Akzentfarbe)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rechnungs- & Angebotslayout</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="logoUrl">Firmenlogo (oben rechts auf PDFs)</Label>
+            <ImageUpload id="logoUrl" name="logoUrl" defaultValue={org.logoUrl} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input id="invoiceShowEmail" name="invoiceShowEmail" type="checkbox" defaultChecked={org.invoiceShowEmail} className="h-4 w-4" />
+            <Label htmlFor="invoiceShowEmail">E-Mail auf PDF anzeigen</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <input id="invoiceShowPhone" name="invoiceShowPhone" type="checkbox" defaultChecked={org.invoiceShowPhone} className="h-4 w-4" />
+            <Label htmlFor="invoiceShowPhone">Telefon auf PDF anzeigen</Label>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="invoiceFooterText">Fußzeilentext (optional)</Label>
+            <Textarea id="invoiceFooterText" name="invoiceFooterText" defaultValue={org.invoiceFooterText} rows={2} placeholder="z.B. Bankverbindung, Dank für den Auftrag, …" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Steuer & Nummernkreise</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -124,7 +225,7 @@ export function SettingsForm({ org }: { org: OrgFormValues }) {
               defaultValue={org.vatRatePercent}
             />
           </div>
-          <div className="space-y-2 sm:col-span-2">
+          <div className="space-y-2">
             <Label htmlFor="invoiceNumberPrefix">Rechnungsnummern-Präfix</Label>
             <Input
               id="invoiceNumberPrefix"
@@ -135,6 +236,19 @@ export function SettingsForm({ org }: { org: OrgFormValues }) {
             <p className="text-muted-foreground text-xs">
               Nächste Rechnungsnummer: {org.invoiceNumberPrefix}-
               {String(org.invoiceCounter + 1).padStart(4, "0")}
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="offerNumberPrefix">Angebotsnummern-Präfix</Label>
+            <Input
+              id="offerNumberPrefix"
+              name="offerNumberPrefix"
+              defaultValue={org.offerNumberPrefix}
+              required
+            />
+            <p className="text-muted-foreground text-xs">
+              Nächste Angebotsnummer: {org.offerNumberPrefix}-
+              {String(org.offerCounter + 1).padStart(4, "0")}
             </p>
           </div>
         </CardContent>

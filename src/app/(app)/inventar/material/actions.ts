@@ -5,15 +5,23 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
 
+const emptyToNull = (v: unknown) => (v === "" ? null : v);
+
 const materialSchema = z.object({
   name: z.string().min(1, "Name fehlt"),
   type: z.string().min(1, "Typ fehlt"),
+  color: z.preprocess(emptyToNull, z.string().nullable()),
+  photoUrl: z.preprocess(emptyToNull, z.string().url().nullable()),
   unit: z.enum(["GRAMM", "MILLILITER", "STUECK", "METER"]),
   stock: z.coerce.number().min(0),
   minStock: z.coerce.number().min(0),
   pricePerUnit: z.coerce.number().min(0),
-  supplier: z.preprocess((v) => (v === "" ? null : v), z.string().nullable()),
-  note: z.preprocess((v) => (v === "" ? null : v), z.string().nullable()),
+  spoolWeightGrams: z.preprocess(
+    (v) => (v === "" || v === "0" ? null : v),
+    z.coerce.number().min(0).nullable()
+  ),
+  supplier: z.preprocess(emptyToNull, z.string().nullable()),
+  note: z.preprocess(emptyToNull, z.string().nullable()),
 });
 
 export type MaterialState = { error?: string; success?: boolean };

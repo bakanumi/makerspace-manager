@@ -25,7 +25,13 @@ export type DeviceFormValues = {
   powerConsumptionKw: number;
   expectedLifetimeHours: number;
   operatingHours: number;
+  wearFactor: number;
   maintenanceNote: string;
+};
+
+const defaultWearFactor: Record<DeviceFormValues["type"], number> = {
+  DRUCKER_3D: 0.05,
+  LASERGRAVUR: 0.12,
 };
 
 const emptyDevice: Omit<DeviceFormValues, "id"> = {
@@ -35,6 +41,7 @@ const emptyDevice: Omit<DeviceFormValues, "id"> = {
   powerConsumptionKw: 0,
   expectedLifetimeHours: 1000,
   operatingHours: 0,
+  wearFactor: defaultWearFactor.DRUCKER_3D,
   maintenanceNote: "",
 };
 
@@ -42,6 +49,13 @@ export function DeviceDialog({ device }: { device?: DeviceFormValues }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const values = device ?? emptyDevice;
+  const [type, setType] = useState(values.type);
+  const [wearFactor, setWearFactor] = useState(values.wearFactor);
+
+  const handleTypeChange = (newType: DeviceFormValues["type"]) => {
+    setType(newType);
+    if (!device) setWearFactor(defaultWearFactor[newType]);
+  };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -89,10 +103,27 @@ export function DeviceDialog({ device }: { device?: DeviceFormValues }) {
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="d-type">Typ</Label>
-              <NativeSelect id="d-type" name="type" defaultValue={values.type}>
+              <NativeSelect
+                id="d-type"
+                name="type"
+                value={type}
+                onChange={(e) => handleTypeChange(e.target.value as DeviceFormValues["type"])}
+              >
                 <option value="DRUCKER_3D">3D-Drucker</option>
                 <option value="LASERGRAVUR">Lasergravur</option>
               </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="d-wearFactor">Verschleißfaktor (€/h)</Label>
+              <Input
+                id="d-wearFactor"
+                name="wearFactor"
+                type="number"
+                step="0.01"
+                value={wearFactor}
+                onChange={(e) => setWearFactor(Number(e.target.value) || 0)}
+                required
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="d-purchasePrice">Anschaffungspreis (€)</Label>

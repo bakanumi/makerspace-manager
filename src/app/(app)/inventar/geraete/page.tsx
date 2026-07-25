@@ -30,6 +30,7 @@ export default async function GeraetePage() {
           powerConsumptionKw: Number(d.powerConsumptionKw),
           expectedLifetimeHours: Number(d.expectedLifetimeHours),
           operatingHours: Number(d.operatingHours),
+          wearFactor: Number(d.wearFactor),
           maintenanceNote: d.maintenanceNote ?? "",
         }))}
       />

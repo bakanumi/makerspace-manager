@@ -50,9 +50,8 @@ export async function saveCalculation(
   }
 
   const result = computeCalculation({
-    devicePurchasePrice: Number(device.purchasePrice),
+    deviceWearFactor: Number(device.wearFactor),
     devicePowerConsumptionKw: Number(device.powerConsumptionKw),
-    deviceExpectedLifetimeHours: Number(device.expectedLifetimeHours),
     timeHours: data.timeHours,
     laborHours: data.laborHours,
     hourlyRate: data.hourlyRate,
