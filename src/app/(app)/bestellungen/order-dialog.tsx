@@ -20,36 +20,59 @@ import { createOrder } from "./actions";
 
 export type CustomerOption = { id: string; name: string };
 export type ProductOption = { id: string; name: string; salePrice: number; stock: number };
+export type CalculationOption = { id: string; label: string; sellingPrice: number };
+export type ShippingOption = { id: string; name: string; cost: number };
+
+type ItemRow = {
+  kind: "product" | "calculation";
+  productId: string;
+  calculationId: string;
+  quantity: number;
+  unitPrice: number;
+};
 
 export function OrderDialog({
   customers,
   products,
+  calculations,
+  shippingOptions,
 }: {
   customers: CustomerOption[];
   products: ProductOption[];
+  calculations: CalculationOption[];
+  shippingOptions: ShippingOption[];
 }) {
   const [open, setOpen] = useState(false);
   const [customerId, setCustomerId] = useState("");
   const [note, setNote] = useState("");
-  const [items, setItems] = useState<{ productId: string; quantity: number; unitPrice: number }[]>([]);
+  const [items, setItems] = useState<ItemRow[]>([]);
+  const [shippingOptionId, setShippingOptionId] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [voucherCode, setVoucherCode] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const total = useMemo(
+  const canAddItem = products.length > 0 || calculations.length > 0;
+
+  const subtotal = useMemo(
     () => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0),
     [items]
   );
+  const shippingCost = shippingOptions.find((s) => s.id === shippingOptionId)?.cost ?? 0;
 
-  const addItem = () => {
-    const firstUnused = products.find((p) => !items.some((i) => i.productId === p.id));
-    const p = firstUnused ?? products[0];
-    if (!p) return;
-    setItems([...items, { productId: p.id, quantity: 1, unitPrice: p.salePrice }]);
+  const addItem = (kind: ItemRow["kind"]) => {
+    if (kind === "product") {
+      const firstUnused = products.find((p) => !items.some((i) => i.productId === p.id));
+      const p = firstUnused ?? products[0];
+      if (!p) return;
+      setItems([...items, { kind: "product", productId: p.id, calculationId: "", quantity: 1, unitPrice: p.salePrice }]);
+    } else {
+      const c = calculations[0];
+      if (!c) return;
+      setItems([...items, { kind: "calculation", productId: "", calculationId: c.id, quantity: 1, unitPrice: c.sellingPrice }]);
+    }
   };
 
-  const updateItem = (
-    index: number,
-    patch: Partial<{ productId: string; quantity: number; unitPrice: number }>
-  ) => {
+  const updateItem = (index: number, patch: Partial<ItemRow>) => {
     setItems(
       items.map((item, i) => {
         if (i !== index) return item;
@@ -57,6 +80,10 @@ export function OrderDialog({
         if (patch.productId) {
           const p = products.find((pr) => pr.id === patch.productId);
           if (p) next.unitPrice = p.salePrice;
+        }
+        if (patch.calculationId) {
+          const c = calculations.find((cal) => cal.id === patch.calculationId);
+          if (c) next.unitPrice = c.sellingPrice;
         }
         return next;
       })
@@ -69,6 +96,9 @@ export function OrderDialog({
     setCustomerId("");
     setNote("");
     setItems([]);
+    setShippingOptionId("");
+    setCouponCode("");
+    setVoucherCode("");
   };
 
   const handleSubmit = () => {
@@ -81,7 +111,19 @@ export function OrderDialog({
       return;
     }
     startTransition(async () => {
-      const res = await createOrder({ customerId, note, items });
+      const res = await createOrder({
+        customerId,
+        note,
+        items: items.map((i) => ({
+          productId: i.kind === "product" ? i.productId : undefined,
+          calculationId: i.kind === "calculation" ? i.calculationId : undefined,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+        })),
+        shippingOptionId: shippingOptionId || undefined,
+        couponCode: couponCode || undefined,
+        voucherCode: voucherCode || undefined,
+      });
       if (res.success) {
         toast.success("Bestellung angelegt");
         reset();
@@ -124,36 +166,63 @@ export function OrderDialog({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Positionen</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={addItem}
-                disabled={products.length === 0}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Position hinzufügen
-              </Button>
+              <div className="flex gap-1.5">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => addItem("product")}
+                  disabled={products.length === 0}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Produkt
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => addItem("calculation")}
+                  disabled={calculations.length === 0}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Kalkulation
+                </Button>
+              </div>
             </div>
-            {products.length === 0 && (
+            {!canAddItem && (
               <p className="text-muted-foreground text-xs">
-                Lege zuerst ein Produkt unter Produkte an.
+                Lege zuerst ein Produkt oder eine Kalkulation an.
               </p>
             )}
             {items.map((item, i) => (
               <div key={i} className="flex items-center gap-2">
-                <NativeSelect
-                  className="flex-1"
-                  value={item.productId}
-                  onChange={(e) => updateItem(i, { productId: e.target.value })}
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.stock} auf Lager)
-                    </option>
-                  ))}
-                </NativeSelect>
+                {item.kind === "product" ? (
+                  <NativeSelect
+                    className="flex-1"
+                    value={item.productId}
+                    onChange={(e) => updateItem(i, { productId: e.target.value })}
+                  >
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.stock} auf Lager)
+                      </option>
+                    ))}
+                  </NativeSelect>
+                ) : (
+                  <NativeSelect
+                    className="flex-1"
+                    value={item.calculationId}
+                    onChange={(e) => updateItem(i, { calculationId: e.target.value })}
+                  >
+                    {calculations.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                )}
                 <Input
                   type="number"
                   step="1"
@@ -176,14 +245,61 @@ export function OrderDialog({
             ))}
           </div>
 
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="o-shipping">Versandart</Label>
+              <NativeSelect
+                id="o-shipping"
+                value={shippingOptionId}
+                onChange={(e) => setShippingOptionId(e.target.value)}
+              >
+                <option value="">Kein Versand</option>
+                {shippingOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({formatCurrency(s.cost)})
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="o-coupon">Rabattcode (optional)</Label>
+              <Input
+                id="o-coupon"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="z.B. FREUNDE10"
+              />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="o-voucher">Gutschein-Code einlösen (optional)</Label>
+              <Input
+                id="o-voucher"
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value)}
+                placeholder="z.B. GUT-AB12CD"
+              />
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="o-note">Notiz (optional)</Label>
             <Textarea id="o-note" value={note} onChange={(e) => setNote(e.target.value)} rows={2} />
           </div>
 
-          <div className="flex items-center justify-between border-t pt-3">
-            <span className="text-muted-foreground text-sm">Gesamt</span>
-            <span className="text-lg font-semibold">{formatCurrency(total)}</span>
+          <div className="space-y-1 border-t pt-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Zwischensumme</span>
+              <span>{formatCurrency(subtotal)}</span>
+            </div>
+            {shippingCost > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Versand</span>
+                <span>{formatCurrency(shippingCost)}</span>
+              </div>
+            )}
+            <p className="text-muted-foreground text-xs">
+              Rabatt/Gutschein werden beim Speichern serverseitig geprüft und in der Gesamtsumme berücksichtigt.
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
