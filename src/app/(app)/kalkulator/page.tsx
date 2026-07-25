@@ -31,13 +31,13 @@ export default async function KalkulatorPage() {
         devices={devices.map((d) => ({
           id: d.id,
           name: d.name,
-          purchasePrice: Number(d.purchasePrice),
           powerConsumptionKw: Number(d.powerConsumptionKw),
-          expectedLifetimeHours: Number(d.expectedLifetimeHours),
+          wearFactor: Number(d.wearFactor),
         }))}
         materials={materials.map((m) => ({
           id: m.id,
           name: m.name,
+          type: m.type,
           unit: m.unit,
           pricePerUnit: Number(m.pricePerUnit),
         }))}

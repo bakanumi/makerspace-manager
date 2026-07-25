@@ -1,7 +1,6 @@
 export type CalculationInput = {
-  devicePurchasePrice: number;
+  deviceWearFactor: number;
   devicePowerConsumptionKw: number;
-  deviceExpectedLifetimeHours: number;
   timeHours: number;
   laborHours: number;
   hourlyRate: number;
@@ -27,11 +26,7 @@ export function computeCalculation(input: CalculationInput): CalculationResult {
   const materialCost = materialLineCosts.reduce((sum, c) => sum + c, 0);
   const electricityCost =
     input.timeHours * input.devicePowerConsumptionKw * input.electricityPrice;
-  const wearCost =
-    input.deviceExpectedLifetimeHours > 0
-      ? input.timeHours *
-        (input.devicePurchasePrice / input.deviceExpectedLifetimeHours)
-      : 0;
+  const wearCost = input.timeHours * input.deviceWearFactor;
   const laborCost = input.laborHours * input.hourlyRate;
   const costPrice = materialCost + electricityCost + wearCost + laborCost;
   const sellingPrice = costPrice * (1 + input.marginPercent / 100);

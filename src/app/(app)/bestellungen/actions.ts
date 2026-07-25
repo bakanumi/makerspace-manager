@@ -94,6 +94,7 @@ export async function updateOrderStatus(id: string, status: string) {
 
     if (isCancelling && !wasCancelled) {
       for (const item of order.items) {
+        if (!item.productId) continue;
         await tx.product.update({
           where: { id: item.productId },
           data: { stock: { increment: item.quantity } },
@@ -101,6 +102,7 @@ export async function updateOrderStatus(id: string, status: string) {
       }
     } else if (!isCancelling && wasCancelled) {
       for (const item of order.items) {
+        if (!item.productId) continue;
         await tx.product.update({
           where: { id: item.productId },
           data: { stock: { decrement: item.quantity } },
@@ -126,6 +128,7 @@ export async function deleteOrder(id: string) {
 
     if (order.status !== "STORNIERT") {
       for (const item of order.items) {
+        if (!item.productId) continue;
         await tx.product.update({
           where: { id: item.productId },
           data: { stock: { increment: item.quantity } },

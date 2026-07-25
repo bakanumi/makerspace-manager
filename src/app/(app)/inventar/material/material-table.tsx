@@ -54,6 +54,7 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead>Typ</TableHead>
+            <TableHead>Farbe</TableHead>
             <TableHead className="text-right">Bestand</TableHead>
             <TableHead className="text-right">Preis/Einheit</TableHead>
             <TableHead>Lieferant</TableHead>
@@ -65,8 +66,17 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
             const low = m.stock <= m.minStock;
             return (
               <TableRow key={m.id}>
-                <TableCell className="font-medium">{m.name}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {m.photoUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={m.photoUrl} alt={m.name} className="h-8 w-8 rounded object-cover" />
+                    )}
+                    {m.name}
+                  </div>
+                </TableCell>
                 <TableCell>{m.type}</TableCell>
+                <TableCell className="text-muted-foreground">{m.color || "–"}</TableCell>
                 <TableCell className="text-right">
                   <span className={low ? "text-destructive font-medium" : ""}>
                     {formatNumber(m.stock)} {unitLabel[m.unit]}

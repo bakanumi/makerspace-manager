@@ -24,10 +24,13 @@ export default async function MaterialPage() {
           id: m.id,
           name: m.name,
           type: m.type,
+          color: m.color ?? "",
+          photoUrl: m.photoUrl ?? "",
           unit: m.unit,
           stock: Number(m.stock),
           minStock: Number(m.minStock),
           pricePerUnit: Number(m.pricePerUnit),
+          spoolWeightGrams: m.spoolWeightGrams ? Number(m.spoolWeightGrams) : 0,
           supplier: m.supplier ?? "",
           note: m.note ?? "",
         }))}

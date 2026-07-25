@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DurationInput } from "@/components/duration-input";
 import { computeCalculation } from "@/lib/calculation";
 import { formatCurrency } from "@/lib/format";
 import { saveCalculation } from "./actions";
@@ -21,14 +22,14 @@ import { saveCalculation } from "./actions";
 type DeviceOption = {
   id: string;
   name: string;
-  purchasePrice: number;
   powerConsumptionKw: number;
-  expectedLifetimeHours: number;
+  wearFactor: number;
 };
 
 type MaterialOption = {
   id: string;
   name: string;
+  type: string;
   unit: string;
   pricePerUnit: number;
 };
@@ -64,9 +65,8 @@ export function CalculatorForm({
   const result = useMemo(() => {
     if (!device) return null;
     return computeCalculation({
-      devicePurchasePrice: device.purchasePrice,
+      deviceWearFactor: device.wearFactor,
       devicePowerConsumptionKw: device.powerConsumptionKw,
-      deviceExpectedLifetimeHours: device.expectedLifetimeHours,
       timeHours,
       laborHours,
       hourlyRate,
@@ -161,24 +161,12 @@ export function CalculatorForm({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="k-time">Druck-/Gravurzeit (h)</Label>
-              <Input
-                id="k-time"
-                type="number"
-                step="0.1"
-                value={timeHours}
-                onChange={(e) => setTimeHours(Number(e.target.value) || 0)}
-              />
+              <Label htmlFor="k-time">Druck-/Gravurzeit</Label>
+              <DurationInput id="k-time" value={timeHours} onChange={setTimeHours} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="k-labor">Arbeitszeit (h)</Label>
-              <Input
-                id="k-labor"
-                type="number"
-                step="0.1"
-                value={laborHours}
-                onChange={(e) => setLaborHours(Number(e.target.value) || 0)}
-              />
+              <Label htmlFor="k-labor">Arbeitszeit</Label>
+              <DurationInput id="k-labor" value={laborHours} onChange={setLaborHours} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="k-rate">Stundensatz (€)</Label>
@@ -240,13 +228,16 @@ export function CalculatorForm({
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue>
-                      {(value: string) => materials.find((m) => m.id === value)?.name ?? "Material wählen"}
+                      {(value: string) => {
+                        const m = materials.find((mat) => mat.id === value);
+                        return m ? `${m.name} (${m.type})` : "Material wählen";
+                      }}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {materials.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
-                        {m.name}
+                        {m.name} ({m.type})
                       </SelectItem>
                     ))}
                   </SelectContent>

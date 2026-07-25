@@ -20,7 +20,7 @@ export async function GET(
       order: {
         include: {
           customer: true,
-          items: { include: { product: true } },
+          items: { include: { product: true, calculation: true } },
         },
       },
     },
@@ -57,7 +57,7 @@ export async function GET(
         country: invoice.order.customer.country,
       },
       items: invoice.order.items.map((item) => ({
-        name: item.product.name,
+        name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
       })),

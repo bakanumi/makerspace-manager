@@ -12,6 +12,7 @@ const deviceSchema = z.object({
   powerConsumptionKw: z.coerce.number().min(0),
   expectedLifetimeHours: z.coerce.number().min(0.1),
   operatingHours: z.coerce.number().min(0),
+  wearFactor: z.coerce.number().min(0),
   maintenanceNote: z.preprocess((v) => (v === "" ? null : v), z.string().nullable()),
 });
 
