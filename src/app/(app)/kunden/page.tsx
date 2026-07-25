@@ -22,6 +22,7 @@ export default async function KundenPage() {
       <CustomerTable
         customers={customers.map((c) => ({
           id: c.id,
+          customerNumber: c.customerNumber,
           name: c.name,
           email: c.email ?? "",
           phone: c.phone ?? "",

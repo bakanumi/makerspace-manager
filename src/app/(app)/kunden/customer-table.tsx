@@ -43,6 +43,7 @@ export function CustomerTable({ customers }: { customers: CustomerFormValues[] }
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Nr.</TableHead>
             <TableHead>Name</TableHead>
             <TableHead>E-Mail</TableHead>
             <TableHead>Telefon</TableHead>
@@ -53,6 +54,9 @@ export function CustomerTable({ customers }: { customers: CustomerFormValues[] }
         <TableBody>
           {customers.map((c) => (
             <TableRow key={c.id}>
+              <TableCell className="text-muted-foreground">
+                {c.customerNumber ? String(c.customerNumber).padStart(4, "0") : "–"}
+              </TableCell>
               <TableCell className="font-medium">{c.name}</TableCell>
               <TableCell className="text-muted-foreground">{c.email || "–"}</TableCell>
               <TableCell className="text-muted-foreground">{c.phone || "–"}</TableCell>

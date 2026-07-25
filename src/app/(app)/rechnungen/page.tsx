@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { NewInvoiceButton } from "./new-invoice-button";
+import { CorrectionInvoiceButton } from "./correction-invoice-button";
 
 export default async function RechnungenPage() {
   const organizationId = await requireOrgId();
@@ -21,12 +23,16 @@ export default async function RechnungenPage() {
     prisma.invoice.findMany({
       where: { organizationId },
       orderBy: { issuedAt: "desc" },
-      include: { order: { include: { customer: true } } },
+      include: { order: { include: { customer: true } }, correction: true },
     }),
     prisma.order.findMany({
-      where: { organizationId, status: { not: "STORNIERT" }, invoice: null },
+      where: {
+        organizationId,
+        status: { not: "STORNIERT" },
+        invoices: { none: { correctsInvoiceId: null } },
+      },
       orderBy: { createdAt: "desc" },
-      include: { customer: true, items: true },
+      include: { customer: true, items: true, voucherRedemptions: true },
     }),
   ]);
 
@@ -51,9 +57,14 @@ export default async function RechnungenPage() {
           ) : (
             <div className="space-y-2">
               {openOrders.map((o) => {
-                const total = o.items.reduce(
+                const itemsTotal = o.items.reduce(
                   (sum, i) => sum + Number(i.unitPrice) * i.quantity,
                   0
+                );
+                const voucherTotal = o.voucherRedemptions.reduce((sum, r) => sum + Number(r.amount), 0);
+                const total = Math.max(
+                  0,
+                  itemsTotal - Number(o.discountAmount) + Number(o.shippingCost) - voucherTotal
                 );
                 return (
                   <div
@@ -90,13 +101,20 @@ export default async function RechnungenPage() {
                   <TableHead>Kunde</TableHead>
                   <TableHead>Datum</TableHead>
                   <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-24" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {invoices.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell className="font-medium">{inv.number}</TableCell>
+                    <TableCell className="font-medium">
+                      {inv.number}
+                      {inv.correctsInvoiceId && (
+                        <Badge variant="secondary" className="ml-2">
+                          Korrektur
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell>{inv.order.customer.name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {formatDate(inv.issuedAt)}
@@ -105,13 +123,18 @@ export default async function RechnungenPage() {
                       {formatCurrency(Number(inv.totalGross))}
                     </TableCell>
                     <TableCell>
-                      <Link
-                        href={`/rechnungen/${inv.id}/pdf`}
-                        target="_blank"
-                        className="text-muted-foreground hover:text-foreground"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Link>
+                      <div className="flex justify-end gap-1">
+                        {!inv.correctsInvoiceId && !inv.correction && (
+                          <CorrectionInvoiceButton invoiceId={inv.id} />
+                        )}
+                        <Link
+                          href={`/rechnungen/${inv.id}/pdf`}
+                          target="_blank"
+                          className="text-muted-foreground hover:text-foreground flex items-center px-2"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

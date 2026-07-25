@@ -18,6 +18,7 @@ import { createCustomer, updateCustomer } from "./actions";
 
 export type CustomerFormValues = {
   id: string;
+  customerNumber: number | null;
   name: string;
   email: string;
   phone: string;
@@ -30,6 +31,7 @@ export type CustomerFormValues = {
 };
 
 const emptyCustomer: Omit<CustomerFormValues, "id"> = {
+  customerNumber: null,
   name: "",
   email: "",
   phone: "",

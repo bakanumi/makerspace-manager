@@ -332,7 +332,7 @@ model Order {
   updatedAt        DateTime      @updatedAt
 
   items              OrderItem[]
-  invoice            Invoice?
+  invoices           Invoice[]
   voucherRedemptions VoucherRedemption[]
 
   @@index([organizationId])
@@ -386,7 +386,7 @@ model Invoice {
   id                String       @id @default(cuid())
   organizationId    String
   organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  orderId           String       @unique
+  orderId           String
   order             Order        @relation(fields: [orderId], references: [id])
   number            String
   issuedAt          DateTime     @default(now())
@@ -403,4 +403,5 @@ model Invoice {
 
   @@unique([organizationId, number])
   @@index([organizationId])
+  @@index([orderId])
 }
