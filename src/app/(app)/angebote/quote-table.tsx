@@ -56,7 +56,7 @@ export function QuoteTable({ quotes }: { quotes: QuoteRow[] }) {
           <TableRow>
             <TableHead>Nummer</TableHead>
             <TableHead>Kunde</TableHead>
-            <TableHead>Datum</TableHead>
+            <TableHead className="hidden sm:table-cell">Datum</TableHead>
             <TableHead className="text-right">Betrag</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-20" />
@@ -67,7 +67,9 @@ export function QuoteTable({ quotes }: { quotes: QuoteRow[] }) {
             <TableRow key={q.id}>
               <TableCell className="font-medium">{q.number}</TableCell>
               <TableCell>{q.customerName}</TableCell>
-              <TableCell className="text-muted-foreground">{formatDate(q.issuedAt)}</TableCell>
+              <TableCell className="text-muted-foreground hidden sm:table-cell">
+                {formatDate(q.issuedAt)}
+              </TableCell>
               <TableCell className="text-right">{formatCurrency(q.total)}</TableCell>
               <TableCell>
                 <QuoteStatusSelect quoteId={q.id} status={q.status} />

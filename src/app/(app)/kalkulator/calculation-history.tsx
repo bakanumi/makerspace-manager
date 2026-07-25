@@ -48,9 +48,9 @@ export function CalculationHistory({ items }: { items: CalculationHistoryItem[] 
         <TableHeader>
           <TableRow>
             <TableHead>Bezeichnung</TableHead>
-            <TableHead>Gerät</TableHead>
-            <TableHead>Datum</TableHead>
-            <TableHead className="text-right">Selbstkosten</TableHead>
+            <TableHead className="hidden sm:table-cell">Gerät</TableHead>
+            <TableHead className="hidden sm:table-cell">Datum</TableHead>
+            <TableHead className="hidden md:table-cell text-right">Selbstkosten</TableHead>
             <TableHead className="text-right">Verkaufspreis</TableHead>
             <TableHead className="w-10" />
           </TableRow>
@@ -59,9 +59,13 @@ export function CalculationHistory({ items }: { items: CalculationHistoryItem[] 
           {items.map((c) => (
             <TableRow key={c.id}>
               <TableCell className="font-medium">{c.name || "–"}</TableCell>
-              <TableCell>{c.deviceName}</TableCell>
-              <TableCell className="text-muted-foreground">{formatDate(c.createdAt)}</TableCell>
-              <TableCell className="text-right">{formatCurrency(c.costPrice)}</TableCell>
+              <TableCell className="hidden sm:table-cell">{c.deviceName}</TableCell>
+              <TableCell className="text-muted-foreground hidden sm:table-cell">
+                {formatDate(c.createdAt)}
+              </TableCell>
+              <TableCell className="hidden md:table-cell text-right">
+                {formatCurrency(c.costPrice)}
+              </TableCell>
               <TableCell className="text-right font-medium">
                 {formatCurrency(c.sellingPrice)}
               </TableCell>

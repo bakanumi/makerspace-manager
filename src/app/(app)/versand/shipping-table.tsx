@@ -54,7 +54,7 @@ export function ShippingTable({ options }: { options: ShippingFormValues[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Bezeichnung</TableHead>
-            <TableHead>Dienstleister</TableHead>
+            <TableHead className="hidden sm:table-cell">Dienstleister</TableHead>
             <TableHead className="text-right">Kosten</TableHead>
             <TableHead className="w-24" />
           </TableRow>
@@ -63,7 +63,7 @@ export function ShippingTable({ options }: { options: ShippingFormValues[] }) {
           {options.map((o) => (
             <TableRow key={o.id}>
               <TableCell className="font-medium">{o.name}</TableCell>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">
                 <Badge variant="secondary">{carrierLabel[o.carrier]}</Badge>
               </TableCell>
               <TableCell className="text-right">{formatCurrency(o.cost)}</TableCell>

@@ -53,11 +53,11 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Typ</TableHead>
-            <TableHead>Farbe</TableHead>
+            <TableHead className="hidden sm:table-cell">Typ</TableHead>
+            <TableHead className="hidden sm:table-cell">Farbe</TableHead>
             <TableHead className="text-right">Bestand</TableHead>
             <TableHead className="text-right">Preis/Einheit</TableHead>
-            <TableHead>Lieferant</TableHead>
+            <TableHead className="hidden md:table-cell">Lieferant</TableHead>
             <TableHead className="w-24" />
           </TableRow>
         </TableHeader>
@@ -75,8 +75,10 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
                     {m.name}
                   </div>
                 </TableCell>
-                <TableCell>{m.type}</TableCell>
-                <TableCell className="text-muted-foreground">{m.color || "–"}</TableCell>
+                <TableCell className="hidden sm:table-cell">{m.type}</TableCell>
+                <TableCell className="text-muted-foreground hidden sm:table-cell">
+                  {m.color || "–"}
+                </TableCell>
                 <TableCell className="text-right">
                   <span className={low ? "text-destructive font-medium" : ""}>
                     {formatNumber(m.stock)} {unitLabel[m.unit]}
@@ -90,7 +92,9 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
                 <TableCell className="text-right">
                   {formatUnitPrice(m.pricePerUnit)}/{unitLabel[m.unit]}
                 </TableCell>
-                <TableCell className="text-muted-foreground">{m.supplier || "–"}</TableCell>
+                <TableCell className="text-muted-foreground hidden md:table-cell">
+                  {m.supplier || "–"}
+                </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <MaterialDialog material={m} />

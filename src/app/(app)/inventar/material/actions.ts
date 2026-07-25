@@ -17,7 +17,7 @@ const materialSchema = z.object({
   minStock: z.coerce.number().min(0),
   pricePerUnit: z.coerce.number().min(0),
   spoolWeightGrams: z.preprocess(
-    (v) => (v === "" || v === "0" ? null : v),
+    (v) => (v === "" || v === "0" || v === undefined || v === null ? null : v),
     z.coerce.number().min(0).nullable()
   ),
   supplier: z.preprocess(emptyToNull, z.string().nullable()),

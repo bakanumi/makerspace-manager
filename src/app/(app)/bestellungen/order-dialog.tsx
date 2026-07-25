@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
-import { createOrder } from "./actions";
+import { createOrder, updateOrder } from "./actions";
 
 export type CustomerOption = { id: string; name: string };
 export type ProductOption = { id: string; name: string; salePrice: number; stock: number };
@@ -31,24 +31,38 @@ type ItemRow = {
   unitPrice: number;
 };
 
+export type ExistingOrder = {
+  id: string;
+  customerId: string;
+  note: string;
+  shippingOptionId: string;
+  couponCode: string;
+  voucherCode: string;
+  hasInvoice: boolean;
+  items: { kind: "product" | "calculation"; productId: string; calculationId: string; quantity: number; unitPrice: number }[];
+};
+
 export function OrderDialog({
+  order,
   customers,
   products,
   calculations,
   shippingOptions,
 }: {
+  order?: ExistingOrder;
   customers: CustomerOption[];
   products: ProductOption[];
   calculations: CalculationOption[];
   shippingOptions: ShippingOption[];
 }) {
+  const isEdit = !!order;
   const [open, setOpen] = useState(false);
-  const [customerId, setCustomerId] = useState("");
-  const [note, setNote] = useState("");
-  const [items, setItems] = useState<ItemRow[]>([]);
-  const [shippingOptionId, setShippingOptionId] = useState("");
-  const [couponCode, setCouponCode] = useState("");
-  const [voucherCode, setVoucherCode] = useState("");
+  const [customerId, setCustomerId] = useState(order?.customerId ?? "");
+  const [note, setNote] = useState(order?.note ?? "");
+  const [items, setItems] = useState<ItemRow[]>(order?.items ?? []);
+  const [shippingOptionId, setShippingOptionId] = useState(order?.shippingOptionId ?? "");
+  const [couponCode, setCouponCode] = useState(order?.couponCode ?? "");
+  const [voucherCode, setVoucherCode] = useState(order?.voucherCode ?? "");
   const [isPending, startTransition] = useTransition();
 
   const canAddItem = products.length > 0 || calculations.length > 0;
@@ -111,7 +125,7 @@ export function OrderDialog({
       return;
     }
     startTransition(async () => {
-      const res = await createOrder({
+      const payload = {
         customerId,
         note,
         items: items.map((i) => ({
@@ -123,28 +137,46 @@ export function OrderDialog({
         shippingOptionId: shippingOptionId || undefined,
         couponCode: couponCode || undefined,
         voucherCode: voucherCode || undefined,
-      });
+      };
+      const res = isEdit ? await updateOrder(order!.id, payload) : await createOrder(payload);
       if (res.success) {
-        toast.success("Bestellung angelegt");
-        reset();
+        toast.success(isEdit ? "Bestellung aktualisiert" : "Bestellung angelegt");
+        if (isEdit && order!.hasInvoice) {
+          toast.info("Rechnung nicht automatisch aktualisiert – nutze „Rechnung aktualisieren“ in der Übersicht.");
+        }
+        if (!isEdit) reset();
         setOpen(false);
       } else {
-        toast.error(res.error ?? "Fehler beim Anlegen");
+        toast.error(res.error ?? "Fehler beim Speichern");
       }
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button className="gap-1.5" />}>
-        <Plus className="h-4 w-4" />
-        Neue Bestellung
+      <DialogTrigger
+        render={isEdit ? <Button variant="ghost" size="icon-sm" /> : <Button className="gap-1.5" />}
+      >
+        {isEdit ? (
+          <Pencil className="h-3.5 w-3.5" />
+        ) : (
+          <>
+            <Plus className="h-4 w-4" />
+            Neue Bestellung
+          </>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neue Bestellung</DialogTitle>
+          <DialogTitle>{isEdit ? "Bestellung bearbeiten" : "Neue Bestellung"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {isEdit && order!.hasInvoice && (
+            <p className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              Für diese Bestellung existiert bereits eine Rechnung. Nach dem Speichern kannst du sie über
+              „Rechnung aktualisieren“ auf der Rechnungen-Seite neu ausstellen.
+            </p>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="o-customer">Kunde</Label>
             <NativeSelect
@@ -304,7 +336,7 @@ export function OrderDialog({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button onClick={handleSubmit} disabled={isPending}>
-              {isPending ? "Speichern…" : "Bestellung anlegen"}
+              {isPending ? "Speichern…" : isEdit ? "Änderungen speichern" : "Bestellung anlegen"}
             </Button>
           </div>
         </div>

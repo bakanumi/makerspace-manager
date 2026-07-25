@@ -51,7 +51,7 @@ export function ProductTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-14" />
+            <TableHead className="hidden w-14 sm:table-cell" />
             <TableHead>Name</TableHead>
             <TableHead className="text-right">Preis</TableHead>
             <TableHead className="text-right">Bestand</TableHead>
@@ -61,7 +61,7 @@ export function ProductTable({
         <TableBody>
           {products.map((p) => (
             <TableRow key={p.id}>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">
                 {p.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img

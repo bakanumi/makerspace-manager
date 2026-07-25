@@ -65,8 +65,8 @@ export function CouponTable({ coupons }: { coupons: CouponRow[] }) {
           <TableRow>
             <TableHead>Code</TableHead>
             <TableHead>Rabatt</TableHead>
-            <TableHead>Gültigkeit</TableHead>
-            <TableHead>Nutzungen</TableHead>
+            <TableHead className="hidden sm:table-cell">Gültigkeit</TableHead>
+            <TableHead className="hidden sm:table-cell">Nutzungen</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-10" />
           </TableRow>
@@ -78,11 +78,11 @@ export function CouponTable({ coupons }: { coupons: CouponRow[] }) {
               <TableCell>
                 {c.type === "PERCENT" ? `${c.value}%` : formatCurrency(c.value)}
               </TableCell>
-              <TableCell className="text-muted-foreground text-xs">
+              <TableCell className="text-muted-foreground hidden sm:table-cell text-xs">
                 {c.validFrom ? formatDate(c.validFrom) : "–"} bis{" "}
                 {c.validUntil ? formatDate(c.validUntil) : "–"}
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden sm:table-cell">
                 {c.usedCount}
                 {c.maxUses ? ` / ${c.maxUses}` : ""}
               </TableCell>
