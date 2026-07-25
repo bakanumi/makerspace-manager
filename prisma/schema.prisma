@@ -1,0 +1,240 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TaxMode {
+  KLEINUNTERNEHMER
+  REGELBESTEUERUNG
+}
+
+enum DeviceType {
+  DRUCKER_3D
+  LASERGRAVUR
+}
+
+enum MaterialUnit {
+  GRAMM
+  MILLILITER
+  STUECK
+  METER
+}
+
+enum OrderStatus {
+  OFFEN
+  IN_ARBEIT
+  FERTIG
+  VERSENDET
+  BEZAHLT
+  STORNIERT
+}
+
+model Organization {
+  id             String   @id @default(cuid())
+  name           String
+  addressLine1   String?
+  addressLine2   String?
+  postalCode     String?
+  city           String?
+  country        String   @default("Deutschland")
+  email          String?
+  phone          String?
+  taxId          String?
+  taxMode        TaxMode  @default(KLEINUNTERNEHMER)
+  vatRatePercent Decimal  @default(19) @db.Decimal(5, 2)
+  electricityPricePerKwh Decimal @default(0.30) @db.Decimal(10, 4)
+  defaultHourlyRate      Decimal @default(0) @db.Decimal(10, 2)
+  defaultMarginPercent   Decimal @default(20) @db.Decimal(5, 2)
+  invoiceNumberPrefix    String  @default("RE")
+  invoiceCounter         Int     @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users       User[]
+  materials   Material[]
+  devices     Device[]
+  calculations Calculation[]
+  products    Product[]
+  customers   Customer[]
+  orders      Order[]
+  invoices    Invoice[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  name           String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+}
+
+model Material {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  type           String
+  unit           MaterialUnit @default(GRAMM)
+  stock          Decimal      @default(0) @db.Decimal(12, 3)
+  minStock       Decimal      @default(0) @db.Decimal(12, 3)
+  pricePerUnit   Decimal      @default(0) @db.Decimal(10, 4)
+  supplier       String?
+  note           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  calculationLines CalculationMaterialLine[]
+
+  @@index([organizationId])
+}
+
+model Device {
+  id                     String       @id @default(cuid())
+  organizationId         String
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                   String
+  type                   DeviceType
+  purchasePrice          Decimal      @default(0) @db.Decimal(10, 2)
+  powerConsumptionKw     Decimal      @default(0) @db.Decimal(6, 3)
+  expectedLifetimeHours  Decimal      @default(1) @db.Decimal(10, 1)
+  operatingHours         Decimal      @default(0) @db.Decimal(10, 1)
+  maintenanceNote        String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+
+  calculations Calculation[]
+
+  @@index([organizationId])
+}
+
+model Calculation {
+  id               String       @id @default(cuid())
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name             String?
+  deviceId         String
+  device           Device       @relation(fields: [deviceId], references: [id])
+  timeHours        Decimal      @db.Decimal(10, 2)
+  laborHours       Decimal      @default(0) @db.Decimal(10, 2)
+  hourlyRate       Decimal      @default(0) @db.Decimal(10, 2)
+  electricityPrice Decimal      @db.Decimal(10, 4)
+  marginPercent    Decimal      @default(0) @db.Decimal(5, 2)
+
+  materialCost     Decimal      @db.Decimal(10, 2)
+  electricityCost  Decimal      @db.Decimal(10, 2)
+  wearCost         Decimal      @db.Decimal(10, 2)
+  laborCost        Decimal      @db.Decimal(10, 2)
+  costPrice        Decimal      @db.Decimal(10, 2)
+  sellingPrice     Decimal      @db.Decimal(10, 2)
+
+  createdAt        DateTime     @default(now())
+
+  materialLines CalculationMaterialLine[]
+  products      Product[]
+
+  @@index([organizationId])
+}
+
+model CalculationMaterialLine {
+  id            String      @id @default(cuid())
+  calculationId String
+  calculation   Calculation @relation(fields: [calculationId], references: [id], onDelete: Cascade)
+  materialId    String
+  material      Material    @relation(fields: [materialId], references: [id])
+  amount        Decimal     @db.Decimal(12, 3)
+  cost          Decimal     @db.Decimal(10, 2)
+}
+
+model Product {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  photoUrl       String?
+  calculationId  String?
+  calculation    Calculation? @relation(fields: [calculationId], references: [id])
+  salePrice      Decimal      @db.Decimal(10, 2)
+  stock          Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([organizationId])
+}
+
+model Customer {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  email          String?
+  phone          String?
+  addressLine1   String?
+  addressLine2   String?
+  postalCode     String?
+  city           String?
+  country        String       @default("Deutschland")
+  note           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  orders Order[]
+
+  @@index([organizationId])
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  status         OrderStatus  @default(OFFEN)
+  note           String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  items   OrderItem[]
+  invoice Invoice?
+
+  @@index([organizationId])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+}
+
+model Invoice {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orderId        String       @unique
+  order          Order        @relation(fields: [orderId], references: [id])
+  number         String
+  issuedAt       DateTime     @default(now())
+  totalNet       Decimal      @db.Decimal(10, 2)
+  totalGross     Decimal      @db.Decimal(10, 2)
+  taxMode        TaxMode
+  vatRatePercent Decimal      @db.Decimal(5, 2)
+  pdfPath        String?
+
+  @@unique([organizationId, number])
+  @@index([organizationId])
+}

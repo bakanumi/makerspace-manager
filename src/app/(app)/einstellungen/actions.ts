@@ -1,0 +1,49 @@
+"use server";
+
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { requireOrgId } from "@/lib/session";
+
+const emptyToNull = (v: unknown) => (v === "" ? null : v);
+const optionalText = () => z.preprocess(emptyToNull, z.string().nullable());
+
+const settingsSchema = z.object({
+  name: z.string().min(2, "Firmenname ist zu kurz"),
+  addressLine1: optionalText(),
+  addressLine2: optionalText(),
+  postalCode: optionalText(),
+  city: optionalText(),
+  country: z.string().min(1),
+  email: z.preprocess(emptyToNull, z.string().email("Ungültige E-Mail").nullable()),
+  phone: optionalText(),
+  taxId: optionalText(),
+  taxMode: z.enum(["KLEINUNTERNEHMER", "REGELBESTEUERUNG"]),
+  vatRatePercent: z.coerce.number().min(0).max(100),
+  electricityPricePerKwh: z.coerce.number().min(0),
+  defaultHourlyRate: z.coerce.number().min(0),
+  defaultMarginPercent: z.coerce.number().min(0),
+  invoiceNumberPrefix: z.string().min(1),
+});
+
+export type SettingsState = { error?: string; success?: boolean };
+
+export async function updateSettings(
+  _prevState: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const organizationId = await requireOrgId();
+
+  const parsed = settingsSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+  }
+
+  await prisma.organization.update({
+    where: { id: organizationId },
+    data: parsed.data,
+  });
+
+  revalidatePath("/einstellungen");
+  return { success: true };
+}

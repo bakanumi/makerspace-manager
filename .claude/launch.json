@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "C:\\Users\\crazy\\Nextcloud\\Dokumente\\Claude\\dev.cmd",
+      "runtimeArgs": [],
+      "port": 3000
+    }
+  ]
+}
