@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
+import { ImageUpload } from "@/components/image-upload";
 import {
   Dialog,
   DialogContent,
@@ -111,8 +112,8 @@ export function ProductDialog({
               <Textarea id="p-description" name="description" defaultValue={values.description} rows={2} />
             </div>
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="p-photoUrl">Foto-URL (optional)</Label>
-              <Input id="p-photoUrl" name="photoUrl" type="url" defaultValue={values.photoUrl} placeholder="https://…" />
+              <Label htmlFor="p-photoUrl">Foto (optional)</Label>
+              <ImageUpload id="p-photoUrl" name="photoUrl" defaultValue={values.photoUrl} />
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="p-calculationId">Basiert auf Kalkulation</Label>

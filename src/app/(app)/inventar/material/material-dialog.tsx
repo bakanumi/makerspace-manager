@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { NativeSelect } from "@/components/ui/native-select";
+import { ImageUpload } from "@/components/image-upload";
 import {
   Dialog,
   DialogContent,
@@ -185,8 +186,8 @@ export function MaterialDialog({ material }: { material?: MaterialFormValues }) 
               <Input id="m-minStock" name="minStock" type="number" step="0.001" defaultValue={values.minStock} />
             </div>
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="m-photoUrl">Foto-URL (optional)</Label>
-              <Input id="m-photoUrl" name="photoUrl" type="url" defaultValue={values.photoUrl} placeholder="https://…" />
+              <Label htmlFor="m-photoUrl">Foto (optional)</Label>
+              <ImageUpload id="m-photoUrl" name="photoUrl" defaultValue={values.photoUrl} />
             </div>
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="m-supplier">Lieferant</Label>
