@@ -24,6 +24,14 @@ const settingsSchema = z.object({
   defaultHourlyRate: z.coerce.number().min(0),
   defaultMarginPercent: z.coerce.number().min(0),
   invoiceNumberPrefix: z.string().min(1),
+  offerNumberPrefix: z.string().min(1),
+  themeColor: z.enum(["blue", "green", "violet", "amber", "neutral"]),
+  themeMode: z.enum(["LIGHT", "DARK", "SYSTEM"]),
+  pdfTemplate: z.enum(["STANDARD", "MODERN"]),
+  logoUrl: z.preprocess(emptyToNull, z.string().url().nullable()),
+  invoiceShowPhone: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
+  invoiceShowEmail: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
+  invoiceFooterText: optionalText(),
 });
 
 export type SettingsState = { error?: string; success?: boolean };

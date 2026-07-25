@@ -34,6 +34,15 @@ export default async function EinstellungenPage() {
           defaultMarginPercent: Number(org.defaultMarginPercent),
           invoiceNumberPrefix: org.invoiceNumberPrefix,
           invoiceCounter: org.invoiceCounter,
+          offerNumberPrefix: org.offerNumberPrefix,
+          offerCounter: org.offerCounter,
+          themeColor: org.themeColor,
+          themeMode: org.themeMode,
+          pdfTemplate: org.pdfTemplate,
+          logoUrl: org.logoUrl ?? "",
+          invoiceShowPhone: org.invoiceShowPhone,
+          invoiceShowEmail: org.invoiceShowEmail,
+          invoiceFooterText: org.invoiceFooterText ?? "",
         }}
       />
     </div>
