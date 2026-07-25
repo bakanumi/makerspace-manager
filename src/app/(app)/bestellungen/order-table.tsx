@@ -15,6 +15,14 @@ import {
 import { formatCurrency, formatDate } from "@/lib/format";
 import { deleteOrder } from "./actions";
 import { StatusSelect } from "./status-select";
+import {
+  OrderDialog,
+  type CustomerOption,
+  type ProductOption,
+  type CalculationOption,
+  type ShippingOption,
+  type ExistingOrder,
+} from "./order-dialog";
 
 export type OrderRow = {
   id: string;
@@ -23,9 +31,22 @@ export type OrderRow = {
   status: "OFFEN" | "IN_ARBEIT" | "FERTIG" | "VERSENDET" | "BEZAHLT" | "STORNIERT";
   itemCount: number;
   total: number;
+  editData: ExistingOrder;
 };
 
-export function OrderTable({ orders }: { orders: OrderRow[] }) {
+export function OrderTable({
+  orders,
+  customers,
+  products,
+  calculations,
+  shippingOptions,
+}: {
+  orders: OrderRow[];
+  customers: CustomerOption[];
+  products: ProductOption[];
+  calculations: CalculationOption[];
+  shippingOptions: ShippingOption[];
+}) {
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = (id: string) => {
@@ -54,32 +75,45 @@ export function OrderTable({ orders }: { orders: OrderRow[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Kunde</TableHead>
-            <TableHead>Datum</TableHead>
-            <TableHead>Positionen</TableHead>
+            <TableHead className="hidden sm:table-cell">Datum</TableHead>
+            <TableHead className="hidden sm:table-cell">Positionen</TableHead>
             <TableHead className="text-right">Gesamt</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead className="w-10" />
+            <TableHead className="w-20" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((o) => (
             <TableRow key={o.id}>
-              <TableCell className="font-medium">{o.customerName}</TableCell>
-              <TableCell className="text-muted-foreground">{formatDate(o.createdAt)}</TableCell>
-              <TableCell>{o.itemCount}</TableCell>
+              <TableCell className="font-medium whitespace-normal sm:whitespace-nowrap">
+                {o.customerName}
+              </TableCell>
+              <TableCell className="text-muted-foreground hidden sm:table-cell">
+                {formatDate(o.createdAt)}
+              </TableCell>
+              <TableCell className="hidden sm:table-cell">{o.itemCount}</TableCell>
               <TableCell className="text-right font-medium">{formatCurrency(o.total)}</TableCell>
               <TableCell>
                 <StatusSelect orderId={o.id} status={o.status} />
               </TableCell>
               <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  disabled={isPending}
-                  onClick={() => handleDelete(o.id)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex justify-end gap-1">
+                  <OrderDialog
+                    order={o.editData}
+                    customers={customers}
+                    products={products}
+                    calculations={calculations}
+                    shippingOptions={shippingOptions}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={isPending}
+                    onClick={() => handleDelete(o.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </TableCell>
             </TableRow>
           ))}

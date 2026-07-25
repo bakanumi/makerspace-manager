@@ -9,7 +9,13 @@ export default async function BestellungenPage() {
     prisma.order.findMany({
       where: { organizationId },
       orderBy: { createdAt: "desc" },
-      include: { customer: true, items: true, voucherRedemptions: true },
+      include: {
+        customer: true,
+        items: true,
+        voucherRedemptions: { include: { voucher: true } },
+        coupon: true,
+        invoices: true,
+      },
     }),
     prisma.customer.findMany({ where: { organizationId }, orderBy: { name: "asc" } }),
     prisma.product.findMany({ where: { organizationId }, orderBy: { name: "asc" } }),
@@ -22,6 +28,24 @@ export default async function BestellungenPage() {
     prisma.shippingOption.findMany({ where: { organizationId }, orderBy: { name: "asc" } }),
   ]);
 
+  const customerOptions = customers.map((c) => ({ id: c.id, name: c.name }));
+  const productOptions = products.map((p) => ({
+    id: p.id,
+    name: p.name,
+    salePrice: Number(p.salePrice),
+    stock: p.stock,
+  }));
+  const calculationOptions = calculations.map((c) => ({
+    id: c.id,
+    label: `${c.name || c.device.name} – ${c.createdAt.toLocaleDateString("de-DE")}`,
+    sellingPrice: Number(c.sellingPrice),
+  }));
+  const shippingOptionsMapped = shippingOptions.map((s) => ({
+    id: s.id,
+    name: s.name,
+    cost: Number(s.cost),
+  }));
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -32,23 +56,10 @@ export default async function BestellungenPage() {
           </p>
         </div>
         <OrderDialog
-          customers={customers.map((c) => ({ id: c.id, name: c.name }))}
-          products={products.map((p) => ({
-            id: p.id,
-            name: p.name,
-            salePrice: Number(p.salePrice),
-            stock: p.stock,
-          }))}
-          calculations={calculations.map((c) => ({
-            id: c.id,
-            label: `${c.name || c.device.name} – ${c.createdAt.toLocaleDateString("de-DE")}`,
-            sellingPrice: Number(c.sellingPrice),
-          }))}
-          shippingOptions={shippingOptions.map((s) => ({
-            id: s.id,
-            name: s.name,
-            cost: Number(s.cost),
-          }))}
+          customers={customerOptions}
+          products={productOptions}
+          calculations={calculationOptions}
+          shippingOptions={shippingOptionsMapped}
         />
       </div>
       <OrderTable
@@ -63,8 +74,28 @@ export default async function BestellungenPage() {
             status: o.status,
             itemCount: o.items.reduce((sum, i) => sum + i.quantity, 0),
             total,
+            editData: {
+              id: o.id,
+              customerId: o.customerId,
+              note: o.note ?? "",
+              shippingOptionId: o.shippingOptionId ?? "",
+              couponCode: o.coupon?.code ?? "",
+              voucherCode: o.voucherRedemptions[0]?.voucher.code ?? "",
+              hasInvoice: o.invoices.some((inv) => !inv.correctsInvoiceId),
+              items: o.items.map((i) => ({
+                kind: i.productId ? ("product" as const) : ("calculation" as const),
+                productId: i.productId ?? "",
+                calculationId: i.calculationId ?? "",
+                quantity: i.quantity,
+                unitPrice: Number(i.unitPrice),
+              })),
+            },
           };
         })}
+        customers={customerOptions}
+        products={productOptions}
+        calculations={calculationOptions}
+        shippingOptions={shippingOptionsMapped}
       />
     </div>
   );

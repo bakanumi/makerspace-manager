@@ -104,7 +104,16 @@ export function InvoicePdf({
       borderTop: `1pt solid ${accent}`,
       fontWeight: 700,
     },
-    footer: { marginTop: 30, fontSize: 8, color: "#666" },
+    footer: {
+      position: "absolute",
+      bottom: 40,
+      left: 40,
+      right: 40,
+      fontSize: 8,
+      color: "#666",
+      borderTop: "0.5pt solid #ddd",
+      paddingTop: 8,
+    },
   });
 
   return (

@@ -35,7 +35,7 @@ export function QuoteStatusSelect({ quoteId, status }: { quoteId: string; status
 
   return (
     <Select value={status} onValueChange={handleChange} disabled={isPending}>
-      <SelectTrigger size="sm" className="w-36">
+      <SelectTrigger size="sm" className="w-28 sm:w-36">
         <SelectValue>{(value: string) => quoteStatusLabel[value] ?? value}</SelectValue>
       </SelectTrigger>
       <SelectContent>

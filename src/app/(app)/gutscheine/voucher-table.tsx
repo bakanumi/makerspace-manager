@@ -54,8 +54,8 @@ export function VoucherTable({ vouchers }: { vouchers: VoucherRow[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Code</TableHead>
-            <TableHead>Käufer</TableHead>
-            <TableHead>Datum</TableHead>
+            <TableHead className="hidden sm:table-cell">Käufer</TableHead>
+            <TableHead className="hidden md:table-cell">Datum</TableHead>
             <TableHead className="text-right">Wert</TableHead>
             <TableHead className="text-right">Restguthaben</TableHead>
             <TableHead className="w-10" />
@@ -65,8 +65,12 @@ export function VoucherTable({ vouchers }: { vouchers: VoucherRow[] }) {
           {vouchers.map((v) => (
             <TableRow key={v.id}>
               <TableCell className="font-medium">{v.code}</TableCell>
-              <TableCell className="text-muted-foreground">{v.purchasedByName ?? "–"}</TableCell>
-              <TableCell className="text-muted-foreground text-xs">{formatDate(v.issuedAt)}</TableCell>
+              <TableCell className="text-muted-foreground hidden sm:table-cell">
+                {v.purchasedByName ?? "–"}
+              </TableCell>
+              <TableCell className="text-muted-foreground hidden md:table-cell text-xs">
+                {formatDate(v.issuedAt)}
+              </TableCell>
               <TableCell className="text-right">{formatCurrency(v.initialValue)}</TableCell>
               <TableCell className="text-right">
                 {v.remainingValue <= 0 ? (

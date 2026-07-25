@@ -39,7 +39,7 @@ export function StatusSelect({ orderId, status }: { orderId: string; status: Sta
 
   return (
     <Select value={status} onValueChange={handleChange} disabled={isPending}>
-      <SelectTrigger size="sm" className="w-32">
+      <SelectTrigger size="sm" className="w-24 sm:w-32">
         <SelectValue>{(value: string) => statusLabel[value] ?? value}</SelectValue>
       </SelectTrigger>
       <SelectContent>

@@ -43,24 +43,28 @@ export function CustomerTable({ customers }: { customers: CustomerFormValues[] }
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nr.</TableHead>
+            <TableHead className="hidden sm:table-cell">Nr.</TableHead>
             <TableHead>Name</TableHead>
-            <TableHead>E-Mail</TableHead>
-            <TableHead>Telefon</TableHead>
-            <TableHead>Ort</TableHead>
+            <TableHead className="hidden md:table-cell">E-Mail</TableHead>
+            <TableHead className="hidden md:table-cell">Telefon</TableHead>
+            <TableHead className="hidden sm:table-cell">Ort</TableHead>
             <TableHead className="w-24" />
           </TableRow>
         </TableHeader>
         <TableBody>
           {customers.map((c) => (
             <TableRow key={c.id}>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground hidden sm:table-cell">
                 {c.customerNumber ? String(c.customerNumber).padStart(4, "0") : "–"}
               </TableCell>
               <TableCell className="font-medium">{c.name}</TableCell>
-              <TableCell className="text-muted-foreground">{c.email || "–"}</TableCell>
-              <TableCell className="text-muted-foreground">{c.phone || "–"}</TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground hidden md:table-cell">
+                {c.email || "–"}
+              </TableCell>
+              <TableCell className="text-muted-foreground hidden md:table-cell">
+                {c.phone || "–"}
+              </TableCell>
+              <TableCell className="text-muted-foreground hidden sm:table-cell">
                 {[c.postalCode, c.city].filter(Boolean).join(" ") || "–"}
               </TableCell>
               <TableCell>

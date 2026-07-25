@@ -15,6 +15,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/format";
 import { NewInvoiceButton } from "./new-invoice-button";
 import { CorrectionInvoiceButton } from "./correction-invoice-button";
+import { ReissueInvoiceButton } from "./reissue-invoice-button";
 
 export default async function RechnungenPage() {
   const organizationId = await requireOrgId();
@@ -26,15 +27,18 @@ export default async function RechnungenPage() {
       include: { order: { include: { customer: true } }, correction: true },
     }),
     prisma.order.findMany({
-      where: {
-        organizationId,
-        status: { not: "STORNIERT" },
-        invoices: { none: { correctsInvoiceId: null } },
-      },
+      where: { organizationId, status: { not: "STORNIERT" }, invoices: { none: { correctsInvoiceId: null } } },
       orderBy: { createdAt: "desc" },
       include: { customer: true, items: true, voucherRedemptions: true },
     }),
   ]);
+
+  const latestInvoiceIdByOrder = new Map<string, string>();
+  for (const inv of invoices) {
+    if (!latestInvoiceIdByOrder.has(inv.orderId)) {
+      latestInvoiceIdByOrder.set(inv.orderId, inv.id);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -99,45 +103,50 @@ export default async function RechnungenPage() {
                 <TableRow>
                   <TableHead>Nummer</TableHead>
                   <TableHead>Kunde</TableHead>
-                  <TableHead>Datum</TableHead>
+                  <TableHead className="hidden sm:table-cell">Datum</TableHead>
                   <TableHead className="text-right">Betrag</TableHead>
-                  <TableHead className="w-24" />
+                  <TableHead className="w-28" />
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell className="font-medium">
-                      {inv.number}
-                      {inv.correctsInvoiceId && (
-                        <Badge variant="secondary" className="ml-2">
-                          Korrektur
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{inv.order.customer.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(inv.issuedAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(Number(inv.totalGross))}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        {!inv.correctsInvoiceId && !inv.correction && (
-                          <CorrectionInvoiceButton invoiceId={inv.id} />
+                {invoices.map((inv) => {
+                  const isActive = !inv.correctsInvoiceId && !inv.correction;
+                  const canReissue =
+                    inv.order.status !== "STORNIERT" &&
+                    latestInvoiceIdByOrder.get(inv.orderId) === inv.id;
+                  return (
+                    <TableRow key={inv.id}>
+                      <TableCell className="font-medium">
+                        {inv.number}
+                        {inv.correctsInvoiceId && (
+                          <Badge variant="secondary" className="ml-2">
+                            Korrektur
+                          </Badge>
                         )}
-                        <Link
-                          href={`/rechnungen/${inv.id}/pdf`}
-                          target="_blank"
-                          className="text-muted-foreground hover:text-foreground flex items-center px-2"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Link>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>{inv.order.customer.name}</TableCell>
+                      <TableCell className="text-muted-foreground hidden sm:table-cell">
+                        {formatDate(inv.issuedAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(Number(inv.totalGross))}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex justify-end gap-1">
+                          {canReissue && <ReissueInvoiceButton orderId={inv.orderId} />}
+                          {isActive && <CorrectionInvoiceButton invoiceId={inv.id} />}
+                          <Link
+                            href={`/rechnungen/${inv.id}/pdf`}
+                            target="_blank"
+                            className="text-muted-foreground hover:text-foreground flex items-center px-2"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

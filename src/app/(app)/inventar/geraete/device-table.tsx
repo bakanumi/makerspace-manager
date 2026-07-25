@@ -51,9 +51,9 @@ export function DeviceTable({ devices }: { devices: DeviceFormValues[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Typ</TableHead>
-            <TableHead className="text-right">Anschaffung</TableHead>
-            <TableHead className="text-right">Leistung</TableHead>
+            <TableHead className="hidden sm:table-cell">Typ</TableHead>
+            <TableHead className="hidden md:table-cell text-right">Anschaffung</TableHead>
+            <TableHead className="hidden md:table-cell text-right">Leistung</TableHead>
             <TableHead className="text-right">Nutzung</TableHead>
             <TableHead className="w-24" />
           </TableRow>
@@ -68,11 +68,15 @@ export function DeviceTable({ devices }: { devices: DeviceFormValues[] }) {
             return (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">{d.name}</TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   <Badge variant="secondary">{typeLabel[d.type]}</Badge>
                 </TableCell>
-                <TableCell className="text-right">{formatCurrency(d.purchasePrice)}</TableCell>
-                <TableCell className="text-right">{formatNumber(d.powerConsumptionKw, 3)} kW</TableCell>
+                <TableCell className="hidden md:table-cell text-right">
+                  {formatCurrency(d.purchasePrice)}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-right">
+                  {formatNumber(d.powerConsumptionKw, 3)} kW
+                </TableCell>
                 <TableCell className="text-right">
                   <span className={worn ? "text-destructive font-medium" : ""}>
                     {formatNumber(d.operatingHours, 0)} / {formatNumber(d.expectedLifetimeHours, 0)} h ({usagePercent}%)
