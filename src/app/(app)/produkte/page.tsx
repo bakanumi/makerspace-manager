@@ -27,7 +27,7 @@ export default async function ProduktePage() {
         <div>
           <h1 className="text-2xl font-semibold">Produkte</h1>
           <p className="text-muted-foreground text-sm">
-            Fertigprodukte, Verkaufspreise und Lagerbestand
+            Produkte, Verkaufspreise und Lagerbestand
           </p>
         </div>
         <ProductDialog calculations={calculationOptions} />

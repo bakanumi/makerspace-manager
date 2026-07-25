@@ -36,6 +36,37 @@ enum OrderStatus {
   STORNIERT
 }
 
+enum ThemeMode {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum PdfTemplate {
+  STANDARD
+  MODERN
+}
+
+enum Carrier {
+  DHL
+  HERMES
+  DPD
+  POST
+  SONSTIGE
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
+}
+
+enum QuoteStatus {
+  OFFEN
+  ANGENOMMEN
+  ABGELEHNT
+  ABGELAUFEN
+}
+
 model Organization {
   id             String   @id @default(cuid())
   name           String
@@ -49,22 +80,38 @@ model Organization {
   taxId          String?
   taxMode        TaxMode  @default(KLEINUNTERNEHMER)
   vatRatePercent Decimal  @default(19) @db.Decimal(5, 2)
-  electricityPricePerKwh Decimal @default(0.30) @db.Decimal(10, 4)
+  electricityPricePerKwh Decimal @default(0.28) @db.Decimal(10, 4)
   defaultHourlyRate      Decimal @default(0) @db.Decimal(10, 2)
   defaultMarginPercent   Decimal @default(20) @db.Decimal(5, 2)
   invoiceNumberPrefix    String  @default("RE")
   invoiceCounter         Int     @default(0)
+  offerNumberPrefix      String  @default("AN")
+  offerCounter           Int     @default(0)
+  customerNumberCounter  Int     @default(0)
+
+  logoUrl           String?
+  themeColor        String      @default("blue")
+  themeMode         ThemeMode   @default(SYSTEM)
+  pdfTemplate       PdfTemplate @default(STANDARD)
+  invoiceShowPhone  Boolean     @default(true)
+  invoiceShowEmail  Boolean     @default(true)
+  invoiceFooterText String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  users       User[]
-  materials   Material[]
-  devices     Device[]
-  calculations Calculation[]
-  products    Product[]
-  customers   Customer[]
-  orders      Order[]
-  invoices    Invoice[]
+  users         User[]
+  materials     Material[]
+  devices       Device[]
+  calculations  Calculation[]
+  products      Product[]
+  customers     Customer[]
+  orders        Order[]
+  invoices      Invoice[]
+  quotes        Quote[]
+  shippingOptions ShippingOption[]
+  coupons       Coupon[]
+  giftVouchers  GiftVoucher[]
 }
 
 model User {
@@ -83,10 +130,13 @@ model Material {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   name           String
   type           String
+  color          String?
+  photoUrl       String?
   unit           MaterialUnit @default(GRAMM)
   stock          Decimal      @default(0) @db.Decimal(12, 3)
   minStock       Decimal      @default(0) @db.Decimal(12, 3)
   pricePerUnit   Decimal      @default(0) @db.Decimal(10, 4)
+  spoolWeightGrams Decimal?   @db.Decimal(10, 2)
   supplier       String?
   note           String?
   createdAt      DateTime     @default(now())
@@ -107,6 +157,7 @@ model Device {
   powerConsumptionKw     Decimal      @default(0) @db.Decimal(6, 3)
   expectedLifetimeHours  Decimal      @default(1) @db.Decimal(10, 1)
   operatingHours         Decimal      @default(0) @db.Decimal(10, 1)
+  wearFactor             Decimal      @default(0.05) @db.Decimal(10, 4)
   maintenanceNote        String?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
@@ -140,6 +191,8 @@ model Calculation {
 
   materialLines CalculationMaterialLine[]
   products      Product[]
+  orderItems    OrderItem[]
+  quoteItems    QuoteItem[]
 
   @@index([organizationId])
 }
@@ -169,6 +222,7 @@ model Product {
   updatedAt      DateTime     @updatedAt
 
   orderItems OrderItem[]
+  quoteItems QuoteItem[]
 
   @@index([organizationId])
 }
@@ -177,6 +231,7 @@ model Customer {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerNumber Int?
   name           String
   email          String?
   phone          String?
@@ -189,51 +244,162 @@ model Customer {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  orders        Order[]
+  quotes        Quote[]
+  giftVouchers  GiftVoucher[]
+
+  @@index([organizationId])
+}
+
+model ShippingOption {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  carrier        Carrier      @default(SONSTIGE)
+  cost           Decimal      @db.Decimal(10, 2)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
   orders Order[]
 
   @@index([organizationId])
 }
 
-model Order {
+model Coupon {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  customerId     String
-  customer       Customer     @relation(fields: [customerId], references: [id])
-  status         OrderStatus  @default(OFFEN)
-  note           String?
+  code           String
+  type           CouponType
+  value          Decimal      @db.Decimal(10, 2)
+  validFrom      DateTime?
+  validUntil     DateTime?
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  active         Boolean      @default(true)
   createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
 
-  items   OrderItem[]
-  invoice Invoice?
+  orders Order[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model GiftVoucher {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  code           String
+  initialValue   Decimal      @db.Decimal(10, 2)
+  remainingValue Decimal      @db.Decimal(10, 2)
+  purchasedByCustomerId String?
+  purchasedByCustomer   Customer? @relation(fields: [purchasedByCustomerId], references: [id])
+  note           String?
+  issuedAt       DateTime     @default(now())
+
+  redemptions VoucherRedemption[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+}
+
+model VoucherRedemption {
+  id        String      @id @default(cuid())
+  voucherId String
+  voucher   GiftVoucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount    Decimal     @db.Decimal(10, 2)
+  createdAt DateTime    @default(now())
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  organizationId   String
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customerId       String
+  customer         Customer      @relation(fields: [customerId], references: [id])
+  status           OrderStatus   @default(OFFEN)
+  note             String?
+  shippingOptionId String?
+  shippingOption   ShippingOption? @relation(fields: [shippingOptionId], references: [id])
+  shippingCost     Decimal       @default(0) @db.Decimal(10, 2)
+  couponId         String?
+  coupon           Coupon?       @relation(fields: [couponId], references: [id])
+  discountAmount   Decimal       @default(0) @db.Decimal(10, 2)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  items              OrderItem[]
+  invoice            Invoice?
+  voucherRedemptions VoucherRedemption[]
 
   @@index([organizationId])
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-  quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
+  id            String       @id @default(cuid())
+  orderId       String
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String?
+  product       Product?     @relation(fields: [productId], references: [id])
+  calculationId String?
+  calculation   Calculation? @relation(fields: [calculationId], references: [id])
+  description   String?
+  quantity      Int
+  unitPrice     Decimal      @db.Decimal(10, 2)
 }
 
-model Invoice {
+model Quote {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  orderId        String       @unique
-  order          Order        @relation(fields: [orderId], references: [id])
+  customerId     String
+  customer       Customer     @relation(fields: [customerId], references: [id])
   number         String
+  status         QuoteStatus  @default(OFFEN)
+  discountAmount Decimal      @default(0) @db.Decimal(10, 2)
   issuedAt       DateTime     @default(now())
-  totalNet       Decimal      @db.Decimal(10, 2)
-  totalGross     Decimal      @db.Decimal(10, 2)
-  taxMode        TaxMode
-  vatRatePercent Decimal      @db.Decimal(5, 2)
-  pdfPath        String?
+  validUntil     DateTime?
+
+  items QuoteItem[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId])
+}
+
+model QuoteItem {
+  id            String       @id @default(cuid())
+  quoteId       String
+  quote         Quote        @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId     String?
+  product       Product?     @relation(fields: [productId], references: [id])
+  calculationId String?
+  calculation   Calculation? @relation(fields: [calculationId], references: [id])
+  description   String?
+  quantity      Int
+  unitPrice     Decimal      @db.Decimal(10, 2)
+}
+
+model Invoice {
+  id                String       @id @default(cuid())
+  organizationId    String
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  orderId           String       @unique
+  order             Order        @relation(fields: [orderId], references: [id])
+  number            String
+  issuedAt          DateTime     @default(now())
+  totalNet          Decimal      @db.Decimal(10, 2)
+  totalGross        Decimal      @db.Decimal(10, 2)
+  discountAmount    Decimal      @default(0) @db.Decimal(10, 2)
+  shippingCost      Decimal      @default(0) @db.Decimal(10, 2)
+  taxMode           TaxMode
+  vatRatePercent    Decimal      @db.Decimal(5, 2)
+  pdfPath           String?
+  correctsInvoiceId String?      @unique
+  correctsInvoice   Invoice?     @relation("InvoiceCorrection", fields: [correctsInvoiceId], references: [id])
+  correction        Invoice?     @relation("InvoiceCorrection")
 
   @@unique([organizationId, number])
   @@index([organizationId])
