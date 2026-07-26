@@ -42,6 +42,19 @@ type StockItemInput = {
   quantity: number;
 };
 
+const statusSchema = z.enum([
+  "OFFEN",
+  "IN_ARBEIT",
+  "FERTIG",
+  "VERSENDET",
+  "BEZAHLT",
+  "STORNIERT",
+]);
+
+/** Status, ab denen eine Bestellung als abgeschlossen gilt und Lagerbestand (Produkte + Material) gebunden ist. */
+const STOCK_HOLDING_STATUSES = new Set(["FERTIG", "VERSENDET", "BEZAHLT"]);
+const hasStock = (status: string) => STOCK_HOLDING_STATUSES.has(status);
+
 /** Prüft Lagerbestand (Produkte + Material aus Kalkulationen) und zieht ihn ab. Wirft bei nicht ausreichendem Bestand. */
 async function consumeStockForItems(
   tx: Prisma.TransactionClient,
@@ -219,8 +232,7 @@ export async function createOrder(input: OrderInput): Promise<OrderState> {
 
   try {
     const order = await prisma.$transaction(async (tx) => {
-      await consumeStockForItems(tx, organizationId, data.items);
-
+      // Lagerbestand wird erst gebunden, wenn die Bestellung den Status "Fertig" (oder später) erreicht.
       const order = await tx.order.create({
         data: {
           organizationId,
@@ -274,10 +286,10 @@ export async function updateOrder(orderId: string, input: OrderInput): Promise<O
         where: { id: orderId, organizationId },
         include: { items: true, voucherRedemptions: true },
       });
+      const hadStock = hasStock(existing.status);
 
       // Alte Effekte rückgängig machen (außer bei stornierten Bestellungen, die haben keine aktiven Effekte mehr).
       if (existing.status !== "STORNIERT") {
-        await restoreStockForItems(tx, organizationId, existing.items);
         if (existing.couponId) {
           await tx.coupon.update({ where: { id: existing.couponId }, data: { usedCount: { decrement: 1 } } });
         }
@@ -288,6 +300,10 @@ export async function updateOrder(orderId: string, input: OrderInput): Promise<O
           });
         }
       }
+      // Lagerbestand nur zurückbuchen, wenn er für den bisherigen Status auch tatsächlich gebunden war.
+      if (hadStock) {
+        await restoreStockForItems(tx, organizationId, existing.items);
+      }
       await tx.voucherRedemption.deleteMany({ where: { orderId } });
       await tx.orderItem.deleteMany({ where: { orderId } });
 
@@ -296,11 +312,15 @@ export async function updateOrder(orderId: string, input: OrderInput): Promise<O
       let couponId: string | null = null;
       let discountAmount = 0;
       if (existing.status !== "STORNIERT") {
-        await consumeStockForItems(tx, organizationId, data.items);
         const applied = await applyDiscountAndShipping(tx, organizationId, data, orderId);
         shippingCost = applied.shippingCost;
         couponId = applied.couponId;
         discountAmount = applied.discountAmount;
+      }
+      // Lagerbestand nur neu abziehen, wenn der bisherige Status bereits Bestand gebunden hatte
+      // (der Status selbst wird durch diese Aktion nicht verändert, nur die Positionen).
+      if (hadStock) {
+        await consumeStockForItems(tx, organizationId, data.items);
       }
 
       return tx.order.update({
@@ -335,32 +355,12 @@ export async function updateOrder(orderId: string, input: OrderInput): Promise<O
   }
 }
 
-const statusSchema = z.enum([
-  "OFFEN",
-  "IN_ARBEIT",
-  "FERTIG",
-  "VERSENDET",
-  "BEZAHLT",
-  "STORNIERT",
-]);
-
-async function rollbackOrderSideEffects(
+/** Bucht Rabattcode-Nutzung und Gutschein-Guthaben zurück bzw. erneut ein (bei Stornierung/Reaktivierung). */
+async function rollbackCouponAndVoucher(
   tx: Prisma.TransactionClient,
-  organizationId: string,
-  orderId: string,
+  order: { couponId: string | null; voucherRedemptions: { voucherId: string; amount: Prisma.Decimal }[] },
   direction: "restore" | "reapply"
 ) {
-  const order = await tx.order.findUniqueOrThrow({
-    where: { id: orderId },
-    include: { items: true, voucherRedemptions: true },
-  });
-
-  if (direction === "restore") {
-    await restoreStockForItems(tx, organizationId, order.items);
-  } else {
-    await consumeStockForItems(tx, organizationId, order.items);
-  }
-
   if (order.couponId) {
     await tx.coupon.update({
       where: { id: order.couponId },
@@ -382,15 +382,29 @@ export async function updateOrderStatus(id: string, status: string) {
   const parsedStatus = statusSchema.parse(status);
 
   await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUniqueOrThrow({ where: { id, organizationId } });
+    const order = await tx.order.findUniqueOrThrow({
+      where: { id, organizationId },
+      include: { items: true, voucherRedemptions: true },
+    });
 
     const wasCancelled = order.status === "STORNIERT";
     const isCancelling = parsedStatus === "STORNIERT";
 
+    // Rabattcode/Gutschein sind an die Stornierung gekoppelt (unabhängig vom Fertigstellungs-Status).
     if (isCancelling && !wasCancelled) {
-      await rollbackOrderSideEffects(tx, organizationId, id, "restore");
+      await rollbackCouponAndVoucher(tx, order, "restore");
     } else if (!isCancelling && wasCancelled) {
-      await rollbackOrderSideEffects(tx, organizationId, id, "reapply");
+      await rollbackCouponAndVoucher(tx, order, "reapply");
+    }
+
+    // Lagerbestand (Produkte + Material) ist an den Fertigstellungs-Status gekoppelt: erst ab "Fertig"
+    // gilt das Material als verbraucht bzw. das Produkt als entnommen.
+    const hadStock = hasStock(order.status);
+    const willHaveStock = hasStock(parsedStatus);
+    if (hadStock && !willHaveStock) {
+      await restoreStockForItems(tx, organizationId, order.items);
+    } else if (!hadStock && willHaveStock) {
+      await consumeStockForItems(tx, organizationId, order.items);
     }
 
     await tx.order.update({ where: { id }, data: { status: parsedStatus } });
@@ -406,10 +420,16 @@ export async function deleteOrder(id: string) {
   const organizationId = await requireOrgId();
 
   await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUniqueOrThrow({ where: { id, organizationId } });
+    const order = await tx.order.findUniqueOrThrow({
+      where: { id, organizationId },
+      include: { items: true, voucherRedemptions: true },
+    });
 
     if (order.status !== "STORNIERT") {
-      await rollbackOrderSideEffects(tx, organizationId, id, "restore");
+      await rollbackCouponAndVoucher(tx, order, "restore");
+    }
+    if (hasStock(order.status)) {
+      await restoreStockForItems(tx, organizationId, order.items);
     }
 
     await tx.order.delete({ where: { id } });
