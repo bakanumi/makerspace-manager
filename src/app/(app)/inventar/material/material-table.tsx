@@ -14,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatNumber, formatUnitPrice } from "@/lib/format";
+import { colorLabel, isHexColor } from "@/lib/color-names";
 import { deleteMaterial } from "./actions";
 import { MaterialDialog, type MaterialFormValues } from "./material-dialog";
 
@@ -77,7 +78,20 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">{m.type}</TableCell>
                 <TableCell className="text-muted-foreground hidden sm:table-cell">
-                  {m.color || "–"}
+                  {m.color ? (
+                    <div className="flex items-center gap-1.5">
+                      {isHexColor(m.color) && (
+                        <span
+                          className="h-3.5 w-3.5 shrink-0 rounded-full border"
+                          style={{ backgroundColor: m.color }}
+                          title={m.color}
+                        />
+                      )}
+                      {colorLabel(m.color)}
+                    </div>
+                  ) : (
+                    "–"
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <span className={low ? "text-destructive font-medium" : ""}>
