@@ -41,6 +41,7 @@ export default async function ProduktePage() {
           calculationId: p.calculationId ?? "",
           salePrice: Number(p.salePrice),
           stock: p.stock,
+          weightGrams: p.weightGrams ? Number(p.weightGrams) : 0,
         }))}
         calculations={calculationOptions}
       />

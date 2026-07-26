@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatNumber } from "@/lib/format";
 import { deleteProduct } from "./actions";
 import { ProductDialog, type ProductFormValues, type CalculationOption } from "./product-dialog";
 
@@ -54,6 +54,7 @@ export function ProductTable({
             <TableHead className="hidden w-14 sm:table-cell" />
             <TableHead>Name</TableHead>
             <TableHead className="text-right">Preis</TableHead>
+            <TableHead className="hidden text-right md:table-cell">Gewicht</TableHead>
             <TableHead className="text-right">Bestand</TableHead>
             <TableHead className="w-24" />
           </TableRow>
@@ -85,6 +86,9 @@ export function ProductTable({
               </TableCell>
               <TableCell className="text-right font-medium">
                 {formatCurrency(p.salePrice)}
+              </TableCell>
+              <TableCell className="text-muted-foreground hidden text-right md:table-cell">
+                {p.weightGrams > 0 ? `${formatNumber(p.weightGrams)} g` : "–"}
               </TableCell>
               <TableCell className="text-right">
                 {p.stock === 0 ? (

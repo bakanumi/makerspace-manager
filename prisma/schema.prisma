@@ -143,6 +143,7 @@ model Material {
   updatedAt      DateTime     @updatedAt
 
   calculationLines CalculationMaterialLine[]
+  orderItems       OrderItem[]
 
   @@index([organizationId])
 }
@@ -218,6 +219,7 @@ model Product {
   calculation    Calculation? @relation(fields: [calculationId], references: [id])
   salePrice      Decimal      @db.Decimal(10, 2)
   stock          Int          @default(0)
+  weightGrams    Decimal?     @db.Decimal(10, 2)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
@@ -346,6 +348,8 @@ model OrderItem {
   product       Product?     @relation(fields: [productId], references: [id])
   calculationId String?
   calculation   Calculation? @relation(fields: [calculationId], references: [id])
+  materialId    String?
+  material      Material?    @relation(fields: [materialId], references: [id])
   description   String?
   quantity      Int
   unitPrice     Decimal      @db.Decimal(10, 2)

@@ -27,6 +27,7 @@ export type ProductFormValues = {
   calculationId: string;
   salePrice: number;
   stock: number;
+  weightGrams: number;
 };
 
 export type CalculationOption = {
@@ -42,6 +43,7 @@ const emptyProduct: Omit<ProductFormValues, "id"> = {
   calculationId: "",
   salePrice: 0,
   stock: 0,
+  weightGrams: 0,
 };
 
 export function ProductDialog({
@@ -146,6 +148,20 @@ export function ProductDialog({
             <div className="space-y-1.5">
               <Label htmlFor="p-stock">Lagerbestand (Stk)</Label>
               <Input id="p-stock" name="stock" type="number" step="1" defaultValue={values.stock} required />
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="p-weightGrams">Gewicht (g) — für Filament-Abzug pro Stück</Label>
+              <Input
+                id="p-weightGrams"
+                name="weightGrams"
+                type="number"
+                step="0.1"
+                defaultValue={values.weightGrams || ""}
+                placeholder="z.B. 25"
+              />
+              <p className="text-muted-foreground text-xs">
+                Wenn gesetzt, wird beim Hinzufügen zur Bestellung nach dem verwendeten Filament gefragt.
+              </p>
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
