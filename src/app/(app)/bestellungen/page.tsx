@@ -52,7 +52,7 @@ export default async function BestellungenPage() {
         <div>
           <h1 className="text-2xl font-semibold">Bestellungen</h1>
           <p className="text-muted-foreground text-sm">
-            Kundenbestellungen mit automatischem Lagerabzug
+            Kundenbestellungen mit automatischem Lagerabzug bei Status „Fertig“
           </p>
         </div>
         <OrderDialog
