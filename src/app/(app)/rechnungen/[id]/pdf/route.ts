@@ -38,10 +38,10 @@ export async function GET(
     return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
   }
 
-  const itemColor = (item: (typeof invoice.order.items)[number]) =>
-    item.material?.color ??
-    item.calculation?.materialLines[0]?.material.color ??
-    item.product?.calculation?.materialLines[0]?.material.color ??
+  const resolveItemMaterial = (item: (typeof invoice.order.items)[number]) =>
+    item.material ??
+    item.calculation?.materialLines[0]?.material ??
+    item.product?.calculation?.materialLines[0]?.material ??
     null;
 
   const itemsSubtotal = invoice.order.items.reduce(
@@ -60,6 +60,7 @@ export async function GET(
       vatRatePercent: Number(invoice.vatRatePercent),
       itemsSubtotal,
       discountAmount: Number(invoice.discountAmount),
+      voucherAmount: Number(invoice.voucherAmount),
       shippingCost: Number(invoice.shippingCost),
       totalNet: Number(invoice.totalNet),
       totalGross: Number(invoice.totalGross),
@@ -86,12 +87,16 @@ export async function GET(
         country: invoice.order.customer.country,
         customerNumber: invoice.order.customer.customerNumber,
       },
-      items: invoice.order.items.map((item) => ({
-        name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
-        quantity: item.quantity,
-        unitPrice: Number(item.unitPrice),
-        color: itemColor(item),
-      })),
+      items: invoice.order.items.map((item) => {
+        const material = resolveItemMaterial(item);
+        return {
+          name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          color: material?.color ?? null,
+          material: material?.type ?? null,
+        };
+      }),
     })
   );
 

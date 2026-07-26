@@ -33,9 +33,9 @@ export async function GET(
     return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
   }
 
-  const itemColor = (item: (typeof quote.items)[number]) =>
-    item.calculation?.materialLines[0]?.material.color ??
-    item.product?.calculation?.materialLines[0]?.material.color ??
+  const resolveItemMaterial = (item: (typeof quote.items)[number]) =>
+    item.calculation?.materialLines[0]?.material ??
+    item.product?.calculation?.materialLines[0]?.material ??
     null;
 
   const itemsSubtotal = quote.items.reduce(
@@ -60,6 +60,7 @@ export async function GET(
       vatRatePercent: vatRate,
       itemsSubtotal,
       discountAmount,
+      voucherAmount: 0,
       shippingCost: 0,
       totalNet,
       totalGross,
@@ -86,12 +87,16 @@ export async function GET(
         country: quote.customer.country,
         customerNumber: quote.customer.customerNumber,
       },
-      items: quote.items.map((item) => ({
-        name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
-        quantity: item.quantity,
-        unitPrice: Number(item.unitPrice),
-        color: itemColor(item),
-      })),
+      items: quote.items.map((item) => {
+        const material = resolveItemMaterial(item);
+        return {
+          name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
+          quantity: item.quantity,
+          unitPrice: Number(item.unitPrice),
+          color: material?.color ?? null,
+          material: material?.type ?? null,
+        };
+      }),
     })
   );
 
