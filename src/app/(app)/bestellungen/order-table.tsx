@@ -21,6 +21,7 @@ import {
   type ProductOption,
   type CalculationOption,
   type ShippingOption,
+  type MaterialOption,
   type ExistingOrder,
 } from "./order-dialog";
 
@@ -40,12 +41,14 @@ export function OrderTable({
   products,
   calculations,
   shippingOptions,
+  materials,
 }: {
   orders: OrderRow[];
   customers: CustomerOption[];
   products: ProductOption[];
   calculations: CalculationOption[];
   shippingOptions: ShippingOption[];
+  materials: MaterialOption[];
 }) {
   const [isPending, startTransition] = useTransition();
 
@@ -104,6 +107,7 @@ export function OrderTable({
                     products={products}
                     calculations={calculations}
                     shippingOptions={shippingOptions}
+                    materials={materials}
                   />
                   <Button
                     variant="ghost"

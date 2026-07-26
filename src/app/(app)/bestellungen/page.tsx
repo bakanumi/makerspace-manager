@@ -5,7 +5,7 @@ import { OrderTable } from "./order-table";
 
 export default async function BestellungenPage() {
   const organizationId = await requireOrgId();
-  const [orders, customers, products, calculations, shippingOptions] = await Promise.all([
+  const [orders, customers, products, calculations, shippingOptions, materials] = await Promise.all([
     prisma.order.findMany({
       where: { organizationId },
       orderBy: { createdAt: "desc" },
@@ -26,6 +26,7 @@ export default async function BestellungenPage() {
       take: 50,
     }),
     prisma.shippingOption.findMany({ where: { organizationId }, orderBy: { name: "asc" } }),
+    prisma.material.findMany({ where: { organizationId }, orderBy: { name: "asc" } }),
   ]);
 
   const customerOptions = customers.map((c) => ({ id: c.id, name: c.name }));
@@ -34,6 +35,7 @@ export default async function BestellungenPage() {
     name: p.name,
     salePrice: Number(p.salePrice),
     stock: p.stock,
+    weightGrams: p.weightGrams ? Number(p.weightGrams) : 0,
   }));
   const calculationOptions = calculations.map((c) => ({
     id: c.id,
@@ -45,6 +47,7 @@ export default async function BestellungenPage() {
     name: s.name,
     cost: Number(s.cost),
   }));
+  const materialOptions = materials.map((m) => ({ id: m.id, name: m.name, unit: m.unit }));
 
   return (
     <div className="space-y-6">
@@ -60,6 +63,7 @@ export default async function BestellungenPage() {
           products={productOptions}
           calculations={calculationOptions}
           shippingOptions={shippingOptionsMapped}
+          materials={materialOptions}
         />
       </div>
       <OrderTable
@@ -86,6 +90,7 @@ export default async function BestellungenPage() {
                 kind: i.productId ? ("product" as const) : ("calculation" as const),
                 productId: i.productId ?? "",
                 calculationId: i.calculationId ?? "",
+                materialId: i.materialId ?? "",
                 quantity: i.quantity,
                 unitPrice: Number(i.unitPrice),
               })),
@@ -96,6 +101,7 @@ export default async function BestellungenPage() {
         products={productOptions}
         calculations={calculationOptions}
         shippingOptions={shippingOptionsMapped}
+        materials={materialOptions}
       />
     </div>
   );

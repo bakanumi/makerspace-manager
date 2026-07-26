@@ -12,6 +12,10 @@ const productSchema = z.object({
   calculationId: z.preprocess((v) => (v === "" || v === "none" ? null : v), z.string().nullable()),
   salePrice: z.coerce.number().min(0),
   stock: z.coerce.number().int().min(0),
+  weightGrams: z.preprocess(
+    (v) => (v === "" || v === undefined || v === null ? null : v),
+    z.coerce.number().min(0).nullable()
+  ),
 });
 
 export type ProductState = { error?: string; success?: boolean };

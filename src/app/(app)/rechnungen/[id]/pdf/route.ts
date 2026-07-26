@@ -26,6 +26,7 @@ export async function GET(
                 include: { calculation: { include: { materialLines: { include: { material: true } } } } },
               },
               calculation: { include: { materialLines: { include: { material: true } } } },
+              material: true,
             },
           },
         },
@@ -38,6 +39,7 @@ export async function GET(
   }
 
   const itemColor = (item: (typeof invoice.order.items)[number]) =>
+    item.material?.color ??
     item.calculation?.materialLines[0]?.material.color ??
     item.product?.calculation?.materialLines[0]?.material.color ??
     null;

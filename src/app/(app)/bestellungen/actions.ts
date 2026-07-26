@@ -10,6 +10,7 @@ const orderItemSchema = z
   .object({
     productId: z.string().min(1).optional(),
     calculationId: z.string().min(1).optional(),
+    materialId: z.string().min(1).optional(),
     quantity: z.number().int().min(1),
     unitPrice: z.number().min(0),
   })
@@ -32,6 +33,7 @@ export type OrderState = { error?: string; success?: boolean; id?: string };
 type OrderItemInput = {
   productId?: string | null;
   calculationId?: string | null;
+  materialId?: string | null;
   quantity: number;
   unitPrice: number;
 };
@@ -39,6 +41,7 @@ type OrderItemInput = {
 type StockItemInput = {
   productId?: string | null;
   calculationId?: string | null;
+  materialId?: string | null;
   quantity: number;
 };
 
@@ -72,6 +75,12 @@ async function consumeStockForItems(
   });
   const calculationMap = new Map(calculations.map((c) => [c.id, c]));
 
+  const directMaterialIds = items.map((i) => i.materialId).filter((id): id is string => !!id);
+  const directMaterials = directMaterialIds.length
+    ? await tx.material.findMany({ where: { id: { in: directMaterialIds }, organizationId } })
+    : [];
+  const directMaterialMap = new Map(directMaterials.map((m) => [m.id, m]));
+
   // Benötigten Materialverbrauch je Material aufsummieren, um Mehrfachverbrauch korrekt zu prüfen.
   const materialNeed = new Map<string, { name: string; amount: number; current: number }>();
 
@@ -81,6 +90,25 @@ async function consumeStockForItems(
       if (!product) throw new Error("Produkt nicht gefunden");
       if (product.stock < item.quantity) {
         throw new Error(`Nicht genug Lagerbestand für "${product.name}"`);
+      }
+      const weightGrams = product.weightGrams ? Number(product.weightGrams) : 0;
+      if (weightGrams > 0) {
+        if (!item.materialId) {
+          throw new Error(`Bitte Filament für "${product.name}" auswählen`);
+        }
+        const material = directMaterialMap.get(item.materialId);
+        if (!material) throw new Error("Material nicht gefunden");
+        const need = weightGrams * item.quantity;
+        const entry = materialNeed.get(item.materialId);
+        if (entry) {
+          entry.amount += need;
+        } else {
+          materialNeed.set(item.materialId, {
+            name: material.name,
+            amount: need,
+            current: Number(material.stock),
+          });
+        }
       }
     }
     if (item.calculationId) {
@@ -130,6 +158,12 @@ async function restoreStockForItems(
   organizationId: string,
   items: StockItemInput[]
 ) {
+  const productIds = items.map((i) => i.productId).filter((id): id is string => !!id);
+  const products = productIds.length
+    ? await tx.product.findMany({ where: { id: { in: productIds }, organizationId } })
+    : [];
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
   const calculationIds = items.map((i) => i.calculationId).filter((id): id is string => !!id);
   const calculations = await tx.calculation.findMany({
     where: { id: { in: calculationIds }, organizationId },
@@ -145,6 +179,14 @@ async function restoreStockForItems(
         where: { id: item.productId },
         data: { stock: { increment: item.quantity } },
       });
+      const product = productMap.get(item.productId);
+      const weightGrams = product?.weightGrams ? Number(product.weightGrams) : 0;
+      if (weightGrams > 0 && item.materialId) {
+        materialRestore.set(
+          item.materialId,
+          (materialRestore.get(item.materialId) ?? 0) + weightGrams * item.quantity
+        );
+      }
     }
     if (item.calculationId) {
       const calc = calculationMap.get(item.calculationId);
@@ -242,6 +284,7 @@ export async function createOrder(input: OrderInput): Promise<OrderState> {
             create: data.items.map((i) => ({
               productId: i.productId ?? null,
               calculationId: i.calculationId ?? null,
+              materialId: i.materialId ?? null,
               quantity: i.quantity,
               unitPrice: i.unitPrice,
             })),
@@ -336,6 +379,7 @@ export async function updateOrder(orderId: string, input: OrderInput): Promise<O
             create: data.items.map((i) => ({
               productId: i.productId ?? null,
               calculationId: i.calculationId ?? null,
+              materialId: i.materialId ?? null,
               quantity: i.quantity,
               unitPrice: i.unitPrice,
             })),

@@ -19,14 +19,22 @@ import { formatCurrency } from "@/lib/format";
 import { createOrder, updateOrder } from "./actions";
 
 export type CustomerOption = { id: string; name: string };
-export type ProductOption = { id: string; name: string; salePrice: number; stock: number };
+export type ProductOption = {
+  id: string;
+  name: string;
+  salePrice: number;
+  stock: number;
+  weightGrams: number;
+};
 export type CalculationOption = { id: string; label: string; sellingPrice: number };
 export type ShippingOption = { id: string; name: string; cost: number };
+export type MaterialOption = { id: string; name: string; unit: string };
 
 type ItemRow = {
   kind: "product" | "calculation";
   productId: string;
   calculationId: string;
+  materialId: string;
   quantity: number;
   unitPrice: number;
 };
@@ -39,7 +47,14 @@ export type ExistingOrder = {
   couponCode: string;
   voucherCode: string;
   hasInvoice: boolean;
-  items: { kind: "product" | "calculation"; productId: string; calculationId: string; quantity: number; unitPrice: number }[];
+  items: {
+    kind: "product" | "calculation";
+    productId: string;
+    calculationId: string;
+    materialId: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
 };
 
 export function OrderDialog({
@@ -48,12 +63,14 @@ export function OrderDialog({
   products,
   calculations,
   shippingOptions,
+  materials,
 }: {
   order?: ExistingOrder;
   customers: CustomerOption[];
   products: ProductOption[];
   calculations: CalculationOption[];
   shippingOptions: ShippingOption[];
+  materials: MaterialOption[];
 }) {
   const isEdit = !!order;
   const [open, setOpen] = useState(false);
@@ -78,11 +95,17 @@ export function OrderDialog({
       const firstUnused = products.find((p) => !items.some((i) => i.productId === p.id));
       const p = firstUnused ?? products[0];
       if (!p) return;
-      setItems([...items, { kind: "product", productId: p.id, calculationId: "", quantity: 1, unitPrice: p.salePrice }]);
+      setItems([
+        ...items,
+        { kind: "product", productId: p.id, calculationId: "", materialId: "", quantity: 1, unitPrice: p.salePrice },
+      ]);
     } else {
       const c = calculations[0];
       if (!c) return;
-      setItems([...items, { kind: "calculation", productId: "", calculationId: c.id, quantity: 1, unitPrice: c.sellingPrice }]);
+      setItems([
+        ...items,
+        { kind: "calculation", productId: "", calculationId: c.id, materialId: "", quantity: 1, unitPrice: c.sellingPrice },
+      ]);
     }
   };
 
@@ -94,6 +117,7 @@ export function OrderDialog({
         if (patch.productId) {
           const p = products.find((pr) => pr.id === patch.productId);
           if (p) next.unitPrice = p.salePrice;
+          next.materialId = "";
         }
         if (patch.calculationId) {
           const c = calculations.find((cal) => cal.id === patch.calculationId);
@@ -124,6 +148,15 @@ export function OrderDialog({
       toast.error("Bitte mindestens eine Position hinzufügen");
       return;
     }
+    for (const item of items) {
+      if (item.kind === "product") {
+        const p = products.find((pr) => pr.id === item.productId);
+        if (p && p.weightGrams > 0 && !item.materialId) {
+          toast.error(`Bitte Filament für „${p.name}“ auswählen`);
+          return;
+        }
+      }
+    }
     startTransition(async () => {
       const payload = {
         customerId,
@@ -131,6 +164,7 @@ export function OrderDialog({
         items: items.map((i) => ({
           productId: i.kind === "product" ? i.productId : undefined,
           calculationId: i.kind === "calculation" ? i.calculationId : undefined,
+          materialId: i.materialId || undefined,
           quantity: i.quantity,
           unitPrice: i.unitPrice,
         })),
@@ -228,53 +262,81 @@ export function OrderDialog({
                 Lege zuerst ein Produkt oder eine Kalkulation an.
               </p>
             )}
-            {items.map((item, i) => (
-              <div key={i} className="flex items-center gap-2">
-                {item.kind === "product" ? (
-                  <NativeSelect
-                    className="flex-1"
-                    value={item.productId}
-                    onChange={(e) => updateItem(i, { productId: e.target.value })}
-                  >
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.stock} auf Lager)
-                      </option>
-                    ))}
-                  </NativeSelect>
-                ) : (
-                  <NativeSelect
-                    className="flex-1"
-                    value={item.calculationId}
-                    onChange={(e) => updateItem(i, { calculationId: e.target.value })}
-                  >
-                    {calculations.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </NativeSelect>
-                )}
-                <Input
-                  type="number"
-                  step="1"
-                  min="1"
-                  className="w-16"
-                  value={item.quantity}
-                  onChange={(e) => updateItem(i, { quantity: Number(e.target.value) || 1 })}
-                />
-                <Input
-                  type="number"
-                  step="0.01"
-                  className="w-24"
-                  value={item.unitPrice}
-                  onChange={(e) => updateItem(i, { unitPrice: Number(e.target.value) || 0 })}
-                />
-                <Button variant="ghost" size="icon-sm" onClick={() => removeItem(i)}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
+            {items.map((item, i) => {
+              const selectedProduct =
+                item.kind === "product" ? products.find((p) => p.id === item.productId) : undefined;
+              const needsMaterial = !!selectedProduct && selectedProduct.weightGrams > 0;
+              return (
+                <div key={i} className="space-y-1.5 rounded-md border p-2">
+                  <div className="flex items-center gap-2">
+                    {item.kind === "product" ? (
+                      <NativeSelect
+                        className="flex-1"
+                        value={item.productId}
+                        onChange={(e) => updateItem(i, { productId: e.target.value })}
+                      >
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.stock} auf Lager)
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    ) : (
+                      <NativeSelect
+                        className="flex-1"
+                        value={item.calculationId}
+                        onChange={(e) => updateItem(i, { calculationId: e.target.value })}
+                      >
+                        {calculations.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </NativeSelect>
+                    )}
+                    <Input
+                      type="number"
+                      step="1"
+                      min="1"
+                      className="w-16"
+                      value={item.quantity}
+                      onChange={(e) => updateItem(i, { quantity: Number(e.target.value) || 1 })}
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      className="w-24"
+                      value={item.unitPrice}
+                      onChange={(e) => updateItem(i, { unitPrice: Number(e.target.value) || 0 })}
+                    />
+                    <Button variant="ghost" size="icon-sm" onClick={() => removeItem(i)}>
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  {needsMaterial && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-muted-foreground shrink-0 text-xs">Filament</Label>
+                      <NativeSelect
+                        className="flex-1"
+                        value={item.materialId}
+                        onChange={(e) => updateItem(i, { materialId: e.target.value })}
+                      >
+                        <option value="" disabled>
+                          Filament wählen
+                        </option>
+                        {materials
+                          .filter((m) => m.unit === "GRAMM")
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                      </NativeSelect>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
