@@ -18,6 +18,7 @@ export type DocumentPdfProps = {
   vatRatePercent: number;
   itemsSubtotal: number;
   discountAmount: number;
+  voucherAmount: number;
   shippingCost: number;
   totalNet: number;
   totalGross: number;
@@ -44,7 +45,13 @@ export type DocumentPdfProps = {
     country: string;
     customerNumber: number | null;
   };
-  items: { name: string; quantity: number; unitPrice: number; color?: string | null }[];
+  items: {
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    color?: string | null;
+    material?: string | null;
+  }[];
 };
 
 export function InvoicePdf({
@@ -56,6 +63,7 @@ export function InvoicePdf({
   vatRatePercent,
   itemsSubtotal,
   discountAmount,
+  voucherAmount,
   shippingCost,
   totalNet,
   totalGross,
@@ -90,9 +98,11 @@ export function InvoicePdf({
       paddingVertical: 3,
       borderBottom: "0.5pt solid #ddd",
     },
-    colName: { flex: 3, flexDirection: "row", alignItems: "center" },
-    colorDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 5, border: "0.5pt solid #999" },
-    colQty: { flex: 1, textAlign: "right" },
+    colName: { flex: 2 },
+    colMaterial: { flex: 1.3 },
+    colColor: { flex: 0.7, flexDirection: "row", alignItems: "center", justifyContent: "center" },
+    colorDot: { width: 8, height: 8, borderRadius: 4, border: "0.5pt solid #999" },
+    colQty: { flex: 0.7, textAlign: "right" },
     colPrice: { flex: 1, textAlign: "right" },
     colTotal: { flex: 1, textAlign: "right" },
     totals: { marginTop: 16, alignItems: "flex-end" },
@@ -176,18 +186,21 @@ export function InvoicePdf({
 
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={styles.colName}>Position</Text>
+            <Text style={styles.colName}>Produkt</Text>
+            <Text style={styles.colMaterial}>Material</Text>
+            <Text style={styles.colColor}>Farbe</Text>
             <Text style={styles.colQty}>Menge</Text>
             <Text style={styles.colPrice}>Einzelpreis</Text>
             <Text style={styles.colTotal}>Gesamt</Text>
           </View>
           {items.map((item, i) => (
             <View key={i} style={styles.tableRow}>
-              <View style={styles.colName}>
+              <Text style={styles.colName}>{item.name}</Text>
+              <Text style={styles.colMaterial}>{item.material || "–"}</Text>
+              <View style={styles.colColor}>
                 {item.color && isHexColor(item.color) && (
                   <View style={[styles.colorDot, { backgroundColor: item.color }]} />
                 )}
-                <Text>{item.name}</Text>
               </View>
               <Text style={styles.colQty}>{item.quantity}</Text>
               <Text style={styles.colPrice}>{fmt(item.unitPrice)}</Text>
@@ -205,6 +218,12 @@ export function InvoicePdf({
             <View style={styles.totalRow}>
               <Text>Rabatt</Text>
               <Text>−{fmt(discountAmount)}</Text>
+            </View>
+          )}
+          {voucherAmount > 0 && (
+            <View style={styles.totalRow}>
+              <Text>Gutschein eingelöst</Text>
+              <Text>−{fmt(voucherAmount)}</Text>
             </View>
           )}
           {shippingCost > 0 && (
