@@ -20,7 +20,14 @@ export async function GET(
       order: {
         include: {
           customer: true,
-          items: { include: { product: true, calculation: true } },
+          items: {
+            include: {
+              product: {
+                include: { calculation: { include: { materialLines: { include: { material: true } } } } },
+              },
+              calculation: { include: { materialLines: { include: { material: true } } } },
+            },
+          },
         },
       },
     },
@@ -29,6 +36,11 @@ export async function GET(
   if (!invoice) {
     return NextResponse.json({ error: "Rechnung nicht gefunden" }, { status: 404 });
   }
+
+  const itemColor = (item: (typeof invoice.order.items)[number]) =>
+    item.calculation?.materialLines[0]?.material.color ??
+    item.product?.calculation?.materialLines[0]?.material.color ??
+    null;
 
   const itemsSubtotal = invoice.order.items.reduce(
     (sum, item) => sum + Number(item.unitPrice) * item.quantity,
@@ -76,6 +88,7 @@ export async function GET(
         name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
+        color: itemColor(item),
       })),
     })
   );

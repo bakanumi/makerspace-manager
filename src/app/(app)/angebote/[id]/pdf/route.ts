@@ -18,13 +18,25 @@ export async function GET(
     include: {
       organization: true,
       customer: true,
-      items: { include: { product: true, calculation: true } },
+      items: {
+        include: {
+          product: {
+            include: { calculation: { include: { materialLines: { include: { material: true } } } } },
+          },
+          calculation: { include: { materialLines: { include: { material: true } } } },
+        },
+      },
     },
   });
 
   if (!quote) {
     return NextResponse.json({ error: "Angebot nicht gefunden" }, { status: 404 });
   }
+
+  const itemColor = (item: (typeof quote.items)[number]) =>
+    item.calculation?.materialLines[0]?.material.color ??
+    item.product?.calculation?.materialLines[0]?.material.color ??
+    null;
 
   const itemsSubtotal = quote.items.reduce(
     (sum, item) => sum + Number(item.unitPrice) * item.quantity,
@@ -78,6 +90,7 @@ export async function GET(
         name: item.product?.name ?? item.description ?? item.calculation?.name ?? "Position",
         quantity: item.quantity,
         unitPrice: Number(item.unitPrice),
+        color: itemColor(item),
       })),
     })
   );

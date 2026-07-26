@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Image } from "@react-pdf/renderer";
+import { isHexColor } from "@/lib/color-names";
 
 const accentByTemplate = {
   STANDARD: "#1a1a1a",
@@ -43,7 +44,7 @@ export type DocumentPdfProps = {
     country: string;
     customerNumber: number | null;
   };
-  items: { name: string; quantity: number; unitPrice: number }[];
+  items: { name: string; quantity: number; unitPrice: number; color?: string | null }[];
 };
 
 export function InvoicePdf({
@@ -89,7 +90,8 @@ export function InvoicePdf({
       paddingVertical: 3,
       borderBottom: "0.5pt solid #ddd",
     },
-    colName: { flex: 3 },
+    colName: { flex: 3, flexDirection: "row", alignItems: "center" },
+    colorDot: { width: 7, height: 7, borderRadius: 3.5, marginRight: 5, border: "0.5pt solid #999" },
     colQty: { flex: 1, textAlign: "right" },
     colPrice: { flex: 1, textAlign: "right" },
     colTotal: { flex: 1, textAlign: "right" },
@@ -181,7 +183,12 @@ export function InvoicePdf({
           </View>
           {items.map((item, i) => (
             <View key={i} style={styles.tableRow}>
-              <Text style={styles.colName}>{item.name}</Text>
+              <View style={styles.colName}>
+                {item.color && isHexColor(item.color) && (
+                  <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                )}
+                <Text>{item.name}</Text>
+              </View>
               <Text style={styles.colQty}>{item.quantity}</Text>
               <Text style={styles.colPrice}>{fmt(item.unitPrice)}</Text>
               <Text style={styles.colTotal}>{fmt(item.unitPrice * item.quantity)}</Text>

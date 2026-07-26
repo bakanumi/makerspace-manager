@@ -20,7 +20,8 @@ const knownHexNames: Record<string, string> = {
 
 export const isHexColor = (value: string) => /^#[0-9a-fA-F]{6}$/.test(value);
 
-export function colorLabel(value: string): string {
+/** Textlabel für eine Farbe: Freitext unverändert, bekannte Hex-Werte als Name, unbekannte Hex-Werte als null (nur Punkt anzeigen). */
+export function colorLabel(value: string): string | null {
   if (!isHexColor(value)) return value;
-  return knownHexNames[value.toLowerCase()] ?? value;
+  return knownHexNames[value.toLowerCase()] ?? null;
 }
