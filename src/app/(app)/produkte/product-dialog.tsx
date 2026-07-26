@@ -150,17 +150,18 @@ export function ProductDialog({
               <Input id="p-stock" name="stock" type="number" step="1" defaultValue={values.stock} required />
             </div>
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="p-weightGrams">Gewicht (g) — für Filament-Abzug pro Stück</Label>
+              <Label htmlFor="p-weightGrams">Materialmenge pro Stück</Label>
               <Input
                 id="p-weightGrams"
                 name="weightGrams"
                 type="number"
                 step="0.1"
                 defaultValue={values.weightGrams || ""}
-                placeholder="z.B. 25"
+                placeholder="z.B. 25 (Gramm Filament) oder 1 (Holzrohling)"
               />
               <p className="text-muted-foreground text-xs">
-                Wenn gesetzt, wird beim Hinzufügen zur Bestellung nach dem verwendeten Filament gefragt.
+                Wenn gesetzt, wird beim Hinzufügen zur Bestellung nach dem verwendeten Material gefragt
+                und die Menge (in dessen Einheit, z.B. Gramm oder Stück) davon abgezogen.
               </p>
             </div>
           </div>

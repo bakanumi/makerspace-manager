@@ -152,7 +152,7 @@ export function OrderDialog({
       if (item.kind === "product") {
         const p = products.find((pr) => pr.id === item.productId);
         if (p && p.weightGrams > 0 && !item.materialId) {
-          toast.error(`Bitte Filament für „${p.name}“ auswählen`);
+          toast.error(`Bitte Material für „${p.name}“ auswählen`);
           return;
         }
       }
@@ -315,22 +315,20 @@ export function OrderDialog({
                   </div>
                   {needsMaterial && (
                     <div className="flex items-center gap-2">
-                      <Label className="text-muted-foreground shrink-0 text-xs">Filament</Label>
+                      <Label className="text-muted-foreground shrink-0 text-xs">Material</Label>
                       <NativeSelect
                         className="flex-1"
                         value={item.materialId}
                         onChange={(e) => updateItem(i, { materialId: e.target.value })}
                       >
                         <option value="" disabled>
-                          Filament wählen
+                          Material wählen
                         </option>
-                        {materials
-                          .filter((m) => m.unit === "GRAMM")
-                          .map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
+                        {materials.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
                       </NativeSelect>
                     </div>
                   )}

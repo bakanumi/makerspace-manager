@@ -94,7 +94,7 @@ async function consumeStockForItems(
       const weightGrams = product.weightGrams ? Number(product.weightGrams) : 0;
       if (weightGrams > 0) {
         if (!item.materialId) {
-          throw new Error(`Bitte Filament für "${product.name}" auswählen`);
+          throw new Error(`Bitte Material für "${product.name}" auswählen`);
         }
         const material = directMaterialMap.get(item.materialId);
         if (!material) throw new Error("Material nicht gefunden");
