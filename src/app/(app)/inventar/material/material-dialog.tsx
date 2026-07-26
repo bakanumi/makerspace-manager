@@ -51,6 +51,7 @@ export function MaterialDialog({ material }: { material?: MaterialFormValues }) 
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const values = material ?? emptyMaterial;
+  const [color, setColor] = useState(values.color || "");
   const [unit, setUnit] = useState(values.unit);
   const [spoolWeightGrams, setSpoolWeightGrams] = useState(values.spoolWeightGrams || 0);
   const [stock, setStock] = useState(values.stock);
@@ -113,7 +114,22 @@ export function MaterialDialog({ material }: { material?: MaterialFormValues }) 
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="m-color">Farbe</Label>
-              <Input id="m-color" name="color" defaultValue={values.color} placeholder="z.B. Schwarz" />
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Farbe auswählen"
+                  className="h-9 w-9 shrink-0 cursor-pointer rounded-md border p-0.5"
+                  value={/^#[0-9a-fA-F]{6}$/.test(color) ? color : "#ffffff"}
+                  onChange={(e) => setColor(e.target.value)}
+                />
+                <Input
+                  id="m-color"
+                  name="color"
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  placeholder="z.B. Schwarz oder #ff0000"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="m-unit">Einheit</Label>

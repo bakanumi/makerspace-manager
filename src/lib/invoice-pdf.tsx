@@ -145,9 +145,6 @@ export function InvoicePdf({
           {customer.addressLine1 && <Text>{customer.addressLine1}</Text>}
           <Text>{[customer.postalCode, customer.city].filter(Boolean).join(" ")}</Text>
           <Text>{customer.country}</Text>
-          {customer.customerNumber && (
-            <Text>Kundennummer: {String(customer.customerNumber).padStart(4, "0")}</Text>
-          )}
         </View>
 
         <View style={styles.sellerBlock}>
@@ -167,6 +164,11 @@ export function InvoicePdf({
           )}
           {organization.taxId && (
             <Text style={styles.sellerText}>USt-ID/Steuernr.: {organization.taxId}</Text>
+          )}
+          {customer.customerNumber && (
+            <Text style={[styles.sellerText, { marginTop: 6 }]}>
+              Ihre Kundennummer: {String(customer.customerNumber).padStart(4, "0")}
+            </Text>
           )}
         </View>
 
