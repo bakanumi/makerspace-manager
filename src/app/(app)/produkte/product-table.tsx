@@ -54,7 +54,7 @@ export function ProductTable({
             <TableHead className="hidden w-14 sm:table-cell" />
             <TableHead>Name</TableHead>
             <TableHead className="text-right">Preis</TableHead>
-            <TableHead className="hidden text-right md:table-cell">Gewicht</TableHead>
+            <TableHead className="hidden text-right md:table-cell">Materialmenge</TableHead>
             <TableHead className="text-right">Bestand</TableHead>
             <TableHead className="w-24" />
           </TableRow>
@@ -88,7 +88,7 @@ export function ProductTable({
                 {formatCurrency(p.salePrice)}
               </TableCell>
               <TableCell className="text-muted-foreground hidden text-right md:table-cell">
-                {p.weightGrams > 0 ? `${formatNumber(p.weightGrams)} g` : "–"}
+                {p.weightGrams > 0 ? formatNumber(p.weightGrams) : "–"}
               </TableCell>
               <TableCell className="text-right">
                 {p.stock === 0 ? (
