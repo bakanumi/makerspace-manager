@@ -11,6 +11,7 @@ const registerSchema = z.object({
   name: z.string().min(1, "Name fehlt"),
   email: z.string().email("Ungültige E-Mail-Adresse"),
   password: z.string().min(8, "Passwort muss mindestens 8 Zeichen haben"),
+  inviteCode: z.string().min(1, "Einladungscode fehlt"),
 });
 
 export type RegisterState = { error?: string };
@@ -24,13 +25,22 @@ export async function registerOrganizationAndOwner(
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
+    inviteCode: formData.get("inviteCode"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  const { orgName, name, email, password } = parsed.data;
+  const { orgName, name, email, password, inviteCode } = parsed.data;
+
+  const expectedInviteCode = process.env.REGISTER_INVITE_CODE;
+  if (!expectedInviteCode) {
+    return { error: "Registrierung ist aktuell nicht verfügbar." };
+  }
+  if (inviteCode.trim() !== expectedInviteCode) {
+    return { error: "Ungültiger Einladungscode." };
+  }
 
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {

@@ -36,6 +36,10 @@ export function RegisterForm() {
             <Label htmlFor="password">Passwort</Label>
             <Input id="password" name="password" type="password" required minLength={8} />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="inviteCode">Einladungscode</Label>
+            <Input id="inviteCode" name="inviteCode" required placeholder="Von dir erhalten" />
+          </div>
           {state.error && (
             <p className="text-destructive text-sm">{state.error}</p>
           )}
