@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,12 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           <Button type="submit" className="w-full" disabled={pending}>
             {pending ? "Anmelden…" : "Anmelden"}
           </Button>
+          <p className="text-muted-foreground text-center text-sm">
+            Neues Unternehmen?{" "}
+            <Link href="/register" className="text-foreground underline">
+              Konto erstellen
+            </Link>
+          </p>
         </form>
       </CardContent>
     </Card>
