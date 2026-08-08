@@ -131,7 +131,19 @@ export function DeviceDialog({ device }: { device?: DeviceFormValues }) {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="d-powerConsumptionKw">Leistung (kW)</Label>
-              <Input id="d-powerConsumptionKw" name="powerConsumptionKw" type="number" step="0.001" defaultValue={values.powerConsumptionKw} required />
+              <Input
+                id="d-powerConsumptionKw"
+                name="powerConsumptionKw"
+                type="number"
+                step="0.001"
+                max="999.999"
+                defaultValue={values.powerConsumptionKw}
+                placeholder="z.B. 0.2"
+                required
+              />
+              <p className="text-muted-foreground text-xs">
+                In Kilowatt, nicht Watt (z.B. 0.2 für 200 W, 2.2 für 2200 W).
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="d-expectedLifetimeHours">Erw. Lebensdauer (h)</Label>
