@@ -21,7 +21,7 @@
 /build
 
 # lokal hochgeladene Fotos (nur bei Selbst-Hosting ohne Vercel Blob genutzt)
-/public/uploads/
+/uploads/
 
 # misc
 .DS_Store
