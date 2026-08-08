@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
+import { decimalNumber } from "@/lib/zod-decimal";
 
 function randomCode(prefix: string) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -15,7 +16,7 @@ function randomCode(prefix: string) {
 const couponSchema = z.object({
   code: z.string().min(2, "Code fehlt").toUpperCase(),
   type: z.enum(["PERCENT", "FIXED"]),
-  value: z.coerce.number().min(0),
+  value: decimalNumber.pipe(z.number().min(0)),
   validFrom: z.preprocess((v) => (v === "" ? null : v), z.coerce.date().nullable()),
   validUntil: z.preprocess((v) => (v === "" ? null : v), z.coerce.date().nullable()),
   maxUses: z.preprocess((v) => (v === "" ? null : v), z.coerce.number().int().min(1).nullable()),
@@ -55,7 +56,7 @@ export async function deleteCoupon(id: string) {
 }
 
 const voucherSchema = z.object({
-  initialValue: z.coerce.number().min(0.01, "Wert muss größer als 0 sein"),
+  initialValue: decimalNumber.pipe(z.number().min(0.01, "Wert muss größer als 0 sein")),
   purchasedByCustomerId: z.preprocess((v) => (v === "" || v === "none" ? null : v), z.string().nullable()),
   note: z.preprocess((v) => (v === "" ? null : v), z.string().nullable()),
 });

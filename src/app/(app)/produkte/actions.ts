@@ -4,16 +4,20 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
+import { decimalNumber } from "@/lib/zod-decimal";
 
 const productSchema = z.object({
   name: z.string().min(1, "Name fehlt"),
   description: z.preprocess((v) => (v === "" ? null : v), z.string().nullable()),
   photoUrl: z.preprocess((v) => (v === "" ? null : v), z.string().url().nullable()),
   calculationId: z.preprocess((v) => (v === "" || v === "none" ? null : v), z.string().nullable()),
-  salePrice: z.coerce.number().min(0),
-  stock: z.coerce.number().int().min(0),
+  salePrice: decimalNumber.pipe(z.number().min(0)),
+  stock: decimalNumber.pipe(z.number().int().min(0)),
   weightGrams: z.preprocess(
-    (v) => (v === "" || v === undefined || v === null ? null : v),
+    (v) => {
+      if (v === "" || v === undefined || v === null) return null;
+      return typeof v === "string" ? v.replace(",", ".") : v;
+    },
     z.coerce.number().min(0).nullable()
   ),
 });

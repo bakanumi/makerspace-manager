@@ -4,11 +4,12 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
+import { decimalNumber } from "@/lib/zod-decimal";
 
 const shippingSchema = z.object({
   name: z.string().min(1, "Name fehlt"),
   carrier: z.enum(["DHL", "HERMES", "DPD", "POST", "SONSTIGE"]),
-  cost: z.coerce.number().min(0),
+  cost: decimalNumber.pipe(z.number().min(0)),
 });
 
 export type ShippingState = { error?: string; success?: boolean };

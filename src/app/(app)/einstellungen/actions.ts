@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
+import { decimalNumber } from "@/lib/zod-decimal";
 
 const emptyToNull = (v: unknown) => (v === "" ? null : v);
 const optionalText = () => z.preprocess(emptyToNull, z.string().nullable());
@@ -19,10 +20,10 @@ const settingsSchema = z.object({
   phone: optionalText(),
   taxId: optionalText(),
   taxMode: z.enum(["KLEINUNTERNEHMER", "REGELBESTEUERUNG"]),
-  vatRatePercent: z.coerce.number().min(0).max(100),
-  electricityPricePerKwh: z.coerce.number().min(0),
-  defaultHourlyRate: z.coerce.number().min(0),
-  defaultMarginPercent: z.coerce.number().min(0),
+  vatRatePercent: decimalNumber.pipe(z.number().min(0).max(100)),
+  electricityPricePerKwh: decimalNumber.pipe(z.number().min(0)),
+  defaultHourlyRate: decimalNumber.pipe(z.number().min(0)),
+  defaultMarginPercent: decimalNumber.pipe(z.number().min(0)),
   invoiceNumberPrefix: z.string().min(1),
   offerNumberPrefix: z.string().min(1),
   themeColor: z.enum(["blue", "green", "violet", "amber", "neutral"]),

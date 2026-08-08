@@ -4,6 +4,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
+import { decimalNumber } from "@/lib/zod-decimal";
 
 const emptyToNull = (v: unknown) => (v === "" ? null : v);
 
@@ -13,11 +14,14 @@ const materialSchema = z.object({
   color: z.preprocess(emptyToNull, z.string().nullable()),
   photoUrl: z.preprocess(emptyToNull, z.string().url().nullable()),
   unit: z.enum(["GRAMM", "MILLILITER", "STUECK", "METER"]),
-  stock: z.coerce.number().min(0),
-  minStock: z.coerce.number().min(0),
-  pricePerUnit: z.coerce.number().min(0),
+  stock: decimalNumber.pipe(z.number().min(0)),
+  minStock: decimalNumber.pipe(z.number().min(0)),
+  pricePerUnit: decimalNumber.pipe(z.number().min(0)),
   spoolWeightGrams: z.preprocess(
-    (v) => (v === "" || v === "0" || v === undefined || v === null ? null : v),
+    (v) => {
+      if (v === "" || v === "0" || v === undefined || v === null) return null;
+      return typeof v === "string" ? v.replace(",", ".") : v;
+    },
     z.coerce.number().min(0).nullable()
   ),
   supplier: z.preprocess(emptyToNull, z.string().nullable()),

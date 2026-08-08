@@ -4,15 +4,21 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
+import { decimalNumber } from "@/lib/zod-decimal";
 
 const deviceSchema = z.object({
   name: z.string().min(1, "Name fehlt"),
   type: z.enum(["DRUCKER_3D", "LASERGRAVUR"]),
-  purchasePrice: z.coerce.number().min(0),
-  powerConsumptionKw: z.coerce.number().min(0),
-  expectedLifetimeHours: z.coerce.number().min(0.1),
-  operatingHours: z.coerce.number().min(0),
-  wearFactor: z.coerce.number().min(0),
+  purchasePrice: decimalNumber.pipe(z.number().min(0).max(99999999.99, "Anschaffungspreis ist zu hoch")),
+  powerConsumptionKw: decimalNumber.pipe(
+    z
+      .number()
+      .min(0)
+      .max(999.999, "Leistung ist zu hoch – bitte in Kilowatt angeben, nicht Watt (z.B. 2.2 statt 2200)")
+  ),
+  expectedLifetimeHours: decimalNumber.pipe(z.number().min(0.1).max(999999999.9, "Lebensdauer ist zu hoch")),
+  operatingHours: decimalNumber.pipe(z.number().min(0).max(999999999.9, "Betriebsstunden sind zu hoch")),
+  wearFactor: decimalNumber.pipe(z.number().min(0).max(999999.9999, "Verschleißfaktor ist zu hoch")),
   maintenanceNote: z.preprocess((v) => (v === "" ? null : v), z.string().nullable()),
 });
 
