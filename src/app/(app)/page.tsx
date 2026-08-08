@@ -78,7 +78,9 @@ export default async function DashboardPage() {
             <CardTitle>Bestand niedrig</CardTitle>
           </CardHeader>
           <CardContent>
-            {lowStockMaterials.length === 0 ? (
+            {materialCount === 0 ? (
+              <p className="text-muted-foreground text-sm">Noch kein Material erfasst.</p>
+            ) : lowStockMaterials.length === 0 ? (
               <p className="text-muted-foreground text-sm">Alle Materialbestände im grünen Bereich.</p>
             ) : (
               <ul className="space-y-1 text-sm">
