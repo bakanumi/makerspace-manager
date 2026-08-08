@@ -29,15 +29,21 @@ export async function uploadImage(_prev: UploadState, formData: FormData): Promi
     return { url: blob.url };
   }
 
-  // Kein Vercel Blob konfiguriert: lokal in public/uploads speichern. Setzt ein
-  // persistentes Dateisystem voraus (eigener Server mit "next start"), funktioniert
-  // NICHT auf Vercel (dort ist BLOB_READ_WRITE_TOKEN immer gesetzt).
+  // Kein Vercel Blob konfiguriert: lokal speichern (eigener Server mit "next start").
+  // Bewusst AUSSERHALB von public/ abgelegt und über eine eigene Route ausgeliefert
+  // (src/app/uploads/[filename]/route.ts): Next.js' statischer Datei-Server cached
+  // die public/-Dateiliste beim Prozessstart und erkennt danach neu hinzugekommene
+  // Dateien nicht mehr ohne Neustart. Funktioniert NICHT auf Vercel (dort ist
+  // BLOB_READ_WRITE_TOKEN immer gesetzt, dieser Zweig läuft dort nie).
   const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
   const filename = `${organizationId}-${Date.now()}-${safeName}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads");
+  const uploadDir = path.join(process.cwd(), "uploads");
   await mkdir(uploadDir, { recursive: true });
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(path.join(uploadDir, filename), buffer);
 
-  return { url: `/uploads/${filename}` };
+  // Foto-Felder sind <input type="url"> und die Zod-Schemas erwarten .url() —
+  // eine absolute URL ist Pflicht, ein reiner Pfad wird als ungültig abgelehnt.
+  const origin = process.env.NEXTAUTH_URL?.replace(/\/$/, "");
+  return { url: origin ? `${origin}/uploads/${filename}` : `/uploads/${filename}` };
 }
