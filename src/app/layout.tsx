@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,9 +21,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const org = await prisma.organization.findFirst({
-    select: { themeColor: true, themeMode: true },
-  });
+  const session = await auth();
+  const organizationId = session?.user?.organizationId;
+  const org = organizationId
+    ? await prisma.organization.findUnique({
+        where: { id: organizationId },
+        select: { themeColor: true, themeMode: true },
+      })
+    : null;
   const themeColor = org?.themeColor ?? "blue";
   const themeMode = org?.themeMode ?? "SYSTEM";
   const forcedClass = themeMode === "DARK" ? "dark" : themeMode === "LIGHT" ? "light" : "";
