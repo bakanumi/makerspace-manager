@@ -6,6 +6,12 @@
       "runtimeExecutable": "C:\\Users\\crazy\\Nextcloud\\Dokumente\\Claude\\dev.cmd",
       "runtimeArgs": [],
       "port": 3000
+    },
+    {
+      "name": "etiketten-app",
+      "runtimeExecutable": "C:\\Users\\crazy\\Nextcloud\\Dokumente\\etiketten-app\\dev.cmd",
+      "runtimeArgs": [],
+      "port": 3001
     }
   ]
 }
