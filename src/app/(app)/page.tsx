@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
 import { requireOrgId } from "@/lib/session";
 import { formatCurrency } from "@/lib/format";
+import { syncSpoolmanStock } from "@/lib/spoolman";
 import { Boxes, Printer, ClipboardList, Package } from "lucide-react";
 
 export default async function DashboardPage() {
   const organizationId = await requireOrgId();
+  await syncSpoolmanStock(organizationId);
 
   const [materialCount, deviceCount, lowStockMaterials, openOrders, productCount, orderValue] =
     await Promise.all([

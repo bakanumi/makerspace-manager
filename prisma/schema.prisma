@@ -137,6 +137,7 @@ model Material {
   minStock       Decimal      @default(0) @db.Decimal(12, 3)
   pricePerUnit   Decimal      @default(0) @db.Decimal(10, 4)
   spoolWeightGrams Decimal?   @db.Decimal(10, 2)
+  spoolmanFilamentId Int?
   supplier       String?
   note           String?
   createdAt      DateTime     @default(now())

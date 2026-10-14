@@ -16,7 +16,7 @@ import {
 import { formatNumber, formatUnitPrice } from "@/lib/format";
 import { colorLabel, isHexColor } from "@/lib/color-names";
 import { deleteMaterial } from "./actions";
-import { MaterialDialog, type MaterialFormValues } from "./material-dialog";
+import { MaterialDialog, type MaterialFormValues, type SpoolOption } from "./material-dialog";
 
 const unitLabel: Record<MaterialFormValues["unit"], string> = {
   GRAMM: "g",
@@ -25,7 +25,13 @@ const unitLabel: Record<MaterialFormValues["unit"], string> = {
   METER: "m",
 };
 
-export function MaterialTable({ materials }: { materials: MaterialFormValues[] }) {
+export function MaterialTable({
+  materials,
+  spoolOptions = null,
+}: {
+  materials: MaterialFormValues[];
+  spoolOptions?: SpoolOption[] | null;
+}) {
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = (id: string, name: string) => {
@@ -102,6 +108,11 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
                       niedrig
                     </Badge>
                   )}
+                  {m.spoolmanFilamentId !== null && (
+                    <Badge variant="secondary" className="ml-2" title={`Spoolman-Filament #${m.spoolmanFilamentId}`}>
+                      Spoolman
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   {formatUnitPrice(m.pricePerUnit)}/{unitLabel[m.unit]}
@@ -111,7 +122,7 @@ export function MaterialTable({ materials }: { materials: MaterialFormValues[] }
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
-                    <MaterialDialog material={m} />
+                    <MaterialDialog material={m} spoolOptions={spoolOptions} />
                     <Button
                       variant="ghost"
                       size="icon-sm"

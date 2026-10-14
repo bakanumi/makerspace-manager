@@ -24,8 +24,12 @@ const materialSchema = z.object({
     },
     z.coerce.number().min(0).nullable()
   ),
+  spoolmanFilamentId: z.preprocess(emptyToNull, z.coerce.number().int().positive().nullable()),
   supplier: z.preprocess(emptyToNull, z.string().nullable()),
   note: z.preprocess(emptyToNull, z.string().nullable()),
+}).refine((m) => m.spoolmanFilamentId === null || m.unit === "GRAMM", {
+  message: "Die Spoolman-Verknüpfung ist nur bei der Einheit Gramm möglich",
+  path: ["spoolmanFilamentId"],
 });
 
 export type MaterialState = { error?: string; success?: boolean };
