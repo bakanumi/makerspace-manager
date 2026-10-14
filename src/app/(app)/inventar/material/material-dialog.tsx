@@ -29,9 +29,12 @@ export type MaterialFormValues = {
   minStock: number;
   pricePerUnit: number;
   spoolWeightGrams: number;
+  spoolmanFilamentId: number | null;
   supplier: string;
   note: string;
 };
+
+export type SpoolOption = { id: number; label: string };
 
 const emptyMaterial: Omit<MaterialFormValues, "id"> = {
   name: "",
@@ -43,16 +46,28 @@ const emptyMaterial: Omit<MaterialFormValues, "id"> = {
   minStock: 0,
   pricePerUnit: 0,
   spoolWeightGrams: 0,
+  spoolmanFilamentId: null,
   supplier: "",
   note: "",
 };
 
-export function MaterialDialog({ material }: { material?: MaterialFormValues }) {
+export function MaterialDialog({
+  material,
+  spoolOptions = null,
+}: {
+  material?: MaterialFormValues;
+  /** null = Spoolman nicht konfiguriert */
+  spoolOptions?: SpoolOption[] | null;
+}) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const values = material ?? emptyMaterial;
   const [color, setColor] = useState(values.color || "");
   const [unit, setUnit] = useState(values.unit);
+  const [spoolmanFilamentId, setSpoolmanFilamentId] = useState(
+    values.spoolmanFilamentId === null ? "" : String(values.spoolmanFilamentId)
+  );
+  const spoolLinked = unit === "GRAMM" && spoolmanFilamentId !== "";
   const [spoolWeightGrams, setSpoolWeightGrams] = useState(values.spoolWeightGrams || 0);
   const [stock, setStock] = useState(values.stock);
   const [spoolCount, setSpoolCount] = useState(
@@ -185,6 +200,41 @@ export function MaterialDialog({ material }: { material?: MaterialFormValues }) 
               </div>
             )}
 
+            {spoolOptions === null ? (
+              <input type="hidden" name="spoolmanFilamentId" value={spoolmanFilamentId} />
+            ) : (
+              unit === "GRAMM" && (
+                <div className="col-span-2 space-y-1.5 rounded-md border bg-muted/30 p-2.5">
+                  <Label htmlFor="m-spoolmanFilamentId">Spoolman-Filament</Label>
+                  <NativeSelect
+                    id="m-spoolmanFilamentId"
+                    name="spoolmanFilamentId"
+                    value={spoolmanFilamentId}
+                    onChange={(e) => setSpoolmanFilamentId(e.target.value)}
+                  >
+                    <option value="">– nicht verknüpft –</option>
+                    {spoolmanFilamentId !== "" &&
+                      !spoolOptions.some((s) => String(s.id) === spoolmanFilamentId) && (
+                        <option value={spoolmanFilamentId}>
+                          Filament #{spoolmanFilamentId} (keine aktive Spule)
+                        </option>
+                      )}
+                    {spoolOptions.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </NativeSelect>
+                  <p className="text-muted-foreground text-xs">
+                    Verknüpft: der Bestand ist die Summe der Restgewichte aller aktiven Spulen in Spoolman.
+                  </p>
+                </div>
+              )
+            )}
+            {spoolOptions !== null && unit !== "GRAMM" && (
+              <input type="hidden" name="spoolmanFilamentId" value="" />
+            )}
+
             <div className="space-y-1.5">
               <Label htmlFor="m-stock">Bestand ({unit === "GRAMM" ? "g" : unit === "MILLILITER" ? "ml" : unit === "STUECK" ? "Stk" : "m"})</Label>
               <Input
@@ -194,6 +244,8 @@ export function MaterialDialog({ material }: { material?: MaterialFormValues }) 
                 step="0.001"
                 value={stock}
                 onChange={(e) => setStock(Number(e.target.value) || 0)}
+                readOnly={spoolLinked}
+                title={spoolLinked ? "Wird von Spoolman gesetzt" : undefined}
                 required
               />
             </div>
