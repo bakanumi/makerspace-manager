@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 
-const PUBLIC_PATHS = ["/login", "/setup", "/register", "/uploads"];
+// /api/inventory-sync prüft selbst per Bearer-Token (Inventur-App)
+const PUBLIC_PATHS = ["/login", "/setup", "/register", "/uploads", "/api/inventory-sync"];
 
 export const authConfig = {
   trustHost: true,
