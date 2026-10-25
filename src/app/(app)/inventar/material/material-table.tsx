@@ -64,7 +64,7 @@ export function MaterialTable({
             <TableHead className="hidden sm:table-cell">Farbe</TableHead>
             <TableHead className="text-right">Bestand</TableHead>
             <TableHead className="text-right">Preis/Einheit</TableHead>
-            <TableHead className="hidden md:table-cell">Lieferant</TableHead>
+            <TableHead className="hidden md:table-cell">Hersteller</TableHead>
             <TableHead className="w-24" />
           </TableRow>
         </TableHeader>

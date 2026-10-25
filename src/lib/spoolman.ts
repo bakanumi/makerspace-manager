@@ -19,6 +19,8 @@ type SpoolmanSpool = {
 export type SpoolmanFilament = {
   id: number;
   name: string;
+  /** Hersteller laut Spoolman (Vendor) */
+  vendor: string | null;
   type: string;
   colorHex: string | null;
   /** Nettogewicht einer Spule in g */
@@ -76,6 +78,7 @@ export async function fetchFilaments(): Promise<SpoolmanFilament[] | null> {
         group = {
           id: f.id,
           name,
+          vendor: f.vendor?.name?.trim() || null,
           type: f.material || "Filament",
           colorHex: f.color_hex ? `#${f.color_hex.replace(/^#/, "")}` : null,
           spoolWeight: weight,
@@ -104,6 +107,8 @@ const round3 = (n: number) => Math.max(0, Math.round(n * 1000) / 1000);
  * - verknüpfte Materialien bekommen den Bestand aus den Restgewichten der Spulen
  * - Filamente ohne Material werden angelegt, oder ein gleichnamiges, noch nicht
  *   verknüpftes Gramm-Material wird verknüpft statt doppelt angelegt
+ * - der Spoolman-Hersteller wird als Hersteller (supplier) übernommen, aber nur
+ *   wenn dort noch nichts steht, damit eigene Eingaben nicht überschrieben werden
  * Wirft nie: ist Spoolman nicht erreichbar, bleibt alles unverändert.
  */
 export async function syncSpoolmanStock(organizationId: string) {
@@ -120,10 +125,17 @@ export async function syncSpoolmanStock(organizationId: string) {
 
     const materials = await prisma.material.findMany({
       where: { organizationId },
-      select: { id: true, name: true, unit: true, stock: true, spoolmanFilamentId: true },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        stock: true,
+        supplier: true,
+        spoolmanFilamentId: true,
+      },
     });
 
-    // 1. Bestand verknüpfter Materialien überschreiben
+    // 1. Bestand verknüpfter Materialien überschreiben, fehlenden Hersteller ergänzen
     const linkedIds = new Set<number>();
     for (const material of materials) {
       if (material.spoolmanFilamentId === null || material.unit !== "GRAMM") continue;
@@ -131,12 +143,15 @@ export async function syncSpoolmanStock(organizationId: string) {
       const filament = byId.get(material.spoolmanFilamentId);
       // keine aktive Spule mehr = aufgebraucht
       const remaining = filament ? filament.remaining : 0;
-      if (remaining === null) continue;
-      if (Number(material.stock) === round3(remaining)) continue;
-      await prisma.material.update({
-        where: { id: material.id },
-        data: { stock: round3(remaining) },
-      });
+      const data: { stock?: number; supplier?: string } = {};
+      if (remaining !== null && Number(material.stock) !== round3(remaining)) {
+        data.stock = round3(remaining);
+      }
+      if (filament?.vendor && !material.supplier?.trim()) {
+        data.supplier = filament.vendor;
+      }
+      if (Object.keys(data).length === 0) continue;
+      await prisma.material.update({ where: { id: material.id }, data });
     }
 
     // 2. Neue Filamente anlegen bzw. mit gleichnamigem Material verknüpfen
@@ -152,7 +167,11 @@ export async function syncSpoolmanStock(organizationId: string) {
           unlinked.splice(unlinked.indexOf(sameName), 1);
           await prisma.material.update({
             where: { id: sameName.id },
-            data: { spoolmanFilamentId: filament.id, stock },
+            data: {
+              spoolmanFilamentId: filament.id,
+              stock,
+              ...(filament.vendor && !sameName.supplier?.trim() ? { supplier: filament.vendor } : {}),
+            },
           });
         } else {
           await prisma.material.create({
@@ -165,6 +184,7 @@ export async function syncSpoolmanStock(organizationId: string) {
               stock,
               pricePerUnit: filament.pricePerGram,
               spoolWeightGrams: filament.spoolWeight,
+              supplier: filament.vendor,
               spoolmanFilamentId: filament.id,
             },
           });

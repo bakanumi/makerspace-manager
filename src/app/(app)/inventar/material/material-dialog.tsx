@@ -258,7 +258,7 @@ export function MaterialDialog({
               <ImageUpload id="m-photoUrl" name="photoUrl" defaultValue={values.photoUrl} />
             </div>
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="m-supplier">Lieferant</Label>
+              <Label htmlFor="m-supplier">Hersteller</Label>
               <Input id="m-supplier" name="supplier" defaultValue={values.supplier} />
             </div>
             <div className="col-span-2 space-y-1.5">

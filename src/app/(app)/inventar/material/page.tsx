@@ -20,7 +20,7 @@ export default async function MaterialPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Material</h1>
-          <p className="text-muted-foreground text-sm">Bestand, Preise und Lieferanten</p>
+          <p className="text-muted-foreground text-sm">Bestand, Preise und Hersteller</p>
         </div>
         <MaterialDialog spoolOptions={spoolOptions} />
       </div>
