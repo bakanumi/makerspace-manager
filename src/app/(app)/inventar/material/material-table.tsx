@@ -29,7 +29,7 @@ export function MaterialTable({
   materials,
   spoolOptions = null,
 }: {
-  materials: MaterialFormValues[];
+  materials: (MaterialFormValues & { inventoryItemId?: string | null })[];
   spoolOptions?: SpoolOption[] | null;
 }) {
   const [isPending, startTransition] = useTransition();
@@ -111,6 +111,11 @@ export function MaterialTable({
                   {m.spoolmanFilamentId !== null && (
                     <Badge variant="secondary" className="ml-2" title={`Spoolman-Filament #${m.spoolmanFilamentId}`}>
                       Spoolman
+                    </Badge>
+                  )}
+                  {m.inventoryItemId && (
+                    <Badge variant="secondary" className="ml-2" title="Wird aus der Inventur-App synchronisiert – Änderungen dort vornehmen">
+                      Inventur
                     </Badge>
                   )}
                 </TableCell>

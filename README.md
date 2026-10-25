@@ -76,3 +76,27 @@ Empfohlen: **Vercel** (Next.js) + **Neon** (Postgres, kostenloses Tier).
 Rechnungen werden serverseitig als PDF live generiert (kein Datei-Storage
 nötig) – Route `/rechnungen/[id]/pdf`. Fortlaufende Rechnungsnummer und
 Kleinunternehmer-Hinweistext kommen aus den Einstellungen.
+
+## Inventur-App (optional)
+
+Die selbst gehostete Inventur-App (Barcode-Scanner, Lagerorte, Fotos) kann
+ausgewählte Kategorien als Material hierher übertragen. Die Inventur ist dabei
+führend; Verbrauch, der hier gebucht wird (Lagerabzug bei fertigen
+Bestellungen), wird dort übernommen.
+
+1. Schema aktualisieren (neues Feld `Material.inventoryItemId`):
+   ```bash
+   npx prisma db push
+   ```
+2. In `.env` bzw. den Umgebungsvariablen setzen:
+   - `INVENTORY_SYNC_TOKEN` – langes Zufallstoken (mind. 16 Zeichen), dasselbe
+     wird in der Inventur unter „Mehr › makerspace-manager“ eingetragen
+   - `INVENTORY_SYNC_ORG_ID` – ID des Kontos, das die Materialien bekommt (nur
+     nötig, wenn es mehr als ein Konto gibt)
+3. Endpunkte (Bearer-Token, ohne Login): `GET /api/inventory-sync`,
+   `GET /api/inventory-sync/materials`,
+   `PUT|DELETE /api/inventory-sync/materials/{inventurId}`.
+
+Synchronisierte Materialien tragen in der Materialübersicht das Badge
+„Inventur“ – Name, Typ usw. dort in der Inventur ändern, hier würden sie beim
+nächsten Abgleich überschrieben.

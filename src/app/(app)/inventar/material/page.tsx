@@ -38,6 +38,7 @@ export default async function MaterialPage() {
           pricePerUnit: Number(m.pricePerUnit),
           spoolWeightGrams: m.spoolWeightGrams ? Number(m.spoolWeightGrams) : 0,
           spoolmanFilamentId: m.spoolmanFilamentId,
+          inventoryItemId: m.inventoryItemId,
           supplier: m.supplier ?? "",
           note: m.note ?? "",
         }))}
